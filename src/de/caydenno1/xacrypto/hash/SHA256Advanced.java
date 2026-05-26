@@ -72,4 +72,11 @@ public final class SHA256Advanced {
         }
         return o.toString();
     }
+
+    public static byte[] ByteFromHex(String hex) {
+        byte[] out = new byte[hex.length() / 2];
+        for (int i=0;i<out.length;i++) {
+            out[i] = (byte)((Character.digit(hex.charAt(i * 2),16) << 4)|Character.digit(hex.charAt(i * 2 + 1), 16));
+        }
+    }
 }
