@@ -23,5 +23,3 @@ To compile on Windows 10:
 6. (optional)- jar tf XACrypto.jar && view jarfile contents
 
 XACrypto.jar is now in the project root (if u did everything correctly).
-
--- A new release will **NOT** be published until SHA256Advanced is complete. --
