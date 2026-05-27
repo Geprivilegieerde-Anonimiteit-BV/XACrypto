@@ -1,11 +1,14 @@
-package de.caydenno1.xacrypto.misc;
+package de.caydenno1.xacrypto.hash.sha256;
+
+import de.caydenno1.xacrypto.misc.Constants;
+import de.caydenno1.xacrypto.misc.XACryptoException;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import static de.caydenno1.xacrypto.hash.SHA256.Word2Byte;
-import static de.caydenno1.xacrypto.hash.SHA256.compress;
+import static de.caydenno1.xacrypto.hash.sha256.SHA256.Word2Byte;
+import static de.caydenno1.xacrypto.hash.sha256.SHA256.compress;
 
 public final class Digest {
     private final int[] s = Constants.SHA256_H.clone();

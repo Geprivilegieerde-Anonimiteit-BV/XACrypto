@@ -1,7 +1,7 @@
-package de.caydenno1.xacrypto.hash;
+package de.caydenno1.xacrypto.hash.sha256;
 
 import de.caydenno1.xacrypto.misc.Constants;
-import de.caydenno1.xacrypto.misc.Digest;
+
 import java.util.concurrent.RecursiveTask;
 
 public final class SHA256 {
@@ -54,7 +54,7 @@ public final class SHA256 {
         int t = data.length + p + 8;
 
         byte[] pd = new byte[t];
-        System.arraycopy(data, 0, p, 0, data.length);
+        System.arraycopy(data, 0, pd, 0, data.length);
         pd[data.length] = (byte) 0x80;
 
         for (int i =7; i>=0;i--) {
@@ -65,13 +65,7 @@ public final class SHA256 {
         return pd;
     }
 
-    public static String Byte2Hex(byte[] b) {
-        StringBuilder o = new StringBuilder(b.length * 2);
-        for (byte bi : b) {
-            o.append(String.format("%02x",bi&0xff));
-        }
-        return o.toString();
-    }
+
 
     public static byte[] Word2Byte(int[] w){
         byte[] o = new byte[w.length * 4];
@@ -101,11 +95,9 @@ public final class SHA256 {
     }
 
     public static final class HashTask extends RecursiveTask<byte[][]>{
-        private final java.util.List<byte[]> l;
-        private final int f,t;
-        private final boolean dou;
 
-        HashTask(java.util.List<byte[]> l, int f, int t, boolean dou) {this.l=l;this.f=f;this.t=t;this.dou=dou;}
+        HashTask(java.util.List<byte[]> l, int f, int t, boolean dou) {
+        }
 
         @Override
         protected byte[][] compute() { return new byte[0][0]; }
