@@ -1,8 +1,11 @@
 package de.caydenno1.xacrypto.hash.sha256;
 
 import de.caydenno1.xacrypto.misc.Constants;
+import de.caydenno1.xacrypto.misc.XACryptoException;
 
 import java.util.concurrent.RecursiveTask;
+
+import static de.caydenno1.xacrypto.hash.sha256.Hex.hash;
 
 public final class SHA256 {
     private SHA256(){}
@@ -104,7 +107,23 @@ public final class SHA256 {
         // THIS WILL NOT COMPUTE PROPERLY !! -- PLACEHOLDER ^//
     }
 
-    private static void xor(byte[] dest, byte[] src) {
+    static byte[] conc(byte[] a, byte[] b) {
+        byte[] out = new byte[a.length+b.length];
+        System.arraycopy(a,0,out,0,a.length);
+        System.arraycopy(b,0,out,a.length,b.length);
+        return out;
+    }
+
+    public static byte[] tagHash(String tag, byte[] dat) throws XACryptoException {
+        byte[] hasdat = hash(tag.getBytes());
+        byte[] load = new byte[hasdat.length * 2 + dat.length];
+        System.arraycopy(hasdat, 0, load, 0, hasdat.length);
+        System.arraycopy(hasdat, 0, load, hasdat.length, hasdat.length);
+        System.arraycopy(dat,    0, load, hasdat.length * 2, dat.length);
+        return hash(load);
+    }
+
+    static void xor(byte[] dest, byte[] src) {
         for(int i=0;i<dest.length;i++)dest[i]^=src[i];
     }
 
