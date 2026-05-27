@@ -16,6 +16,17 @@ public class Hex {
         return hash(text.getBytes(StandardCharsets.UTF_8));
     }
 
+    public static String hashPlain(String text) throws XACryptoException {
+        byte[] res = new Digest().upd(text).digest();
+        StringBuilder builder = new StringBuilder();
+
+        for (byte b :res) {
+            builder.append(String.format("%02x", b));
+        }
+
+        return builder.toString();
+    }
+
     public static String hashHex(String text) throws XACryptoException {
         return Byte2Hex(hash(text));
     }

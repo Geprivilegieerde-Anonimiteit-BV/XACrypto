@@ -3,10 +3,11 @@ package de.caydenno1.xacrypto.hash.sha256;
 import de.caydenno1.xacrypto.misc.Constants;
 import de.caydenno1.xacrypto.misc.XACryptoException;
 
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RecursiveTask;
 
 import static de.caydenno1.xacrypto.hash.sha256.Hex.hash;
-
+import static de.caydenno1.xacrypto.hash.sha256.Hex.doubleHash;
 public final class SHA256 {
     private SHA256(){}
 
@@ -98,13 +99,69 @@ public final class SHA256 {
     }
 
     public static final class HashTask extends RecursiveTask<byte[][]>{
+        private final java.util.List<byte[]> leaves;
+        private int from,to;
+        private final boolean Double;
 
-        HashTask(java.util.List<byte[]> l, int f, int t, boolean dou) {
+        HashTask(java.util.List<byte[]> leaves, int from, int to, boolean Double) {
+            this.leaves   = leaves;
+            this.from     = from;
+            this.to       = to;
+            this.Double = Double;
         }
 
         @Override
-        protected byte[][] compute() { return new byte[0][0]; }
-        // THIS WILL NOT COMPUTE PROPERLY !! -- PLACEHOLDER ^//
+        protected byte[][] compute() {
+            int len = this.to-this.from;
+            if (len <= 128) {
+                byte[][] res = new byte[len][];
+                for (int i=0;i<len;i++){
+                    try {
+                        res[i] = Double ? doubleHash(leaves.get(from + i))
+                                : hash(leaves.get(from + i));
+                    } catch (XACryptoException e) {};
+                }
+                return res;
+            }
+            int m = from + len/2;
+            HashTask l = new HashTask(leaves,from,m,Double);
+            HashTask r = new HashTask(leaves,m,to,Double);
+            l.fork();
+            byte[][] br = r.compute();
+            byte[][] bl = l.join();
+            byte[][] mergd = new byte[br.length+bl.length][];
+            System.arraycopy(bl,0,mergd,0,bl.length);
+            System.arraycopy(br,0,mergd,bl.length,br.length);
+            return mergd;
+        }
+    }
+
+    public static byte[] merkRoot(java.util.List<byte[]> leaves) throws XACryptoException {
+        if (leaves.isEmpty()) throw new XACryptoException("leaves List is empty!");
+
+        byte[][] lvl = ForkJoinPool.commonPool().invoke(new HashTask(leaves, 0, leaves.size(), false));
+        return mergeUp(lvl, (int)1);
+    };
+
+    public static byte[] merkRootDuo(java.util.List<byte[]> leaves) throws XACryptoException {
+        if (leaves.isEmpty()) throw new XACryptoException("leaves List is empty!");
+
+        byte[][] lvl = ForkJoinPool.commonPool().invoke(new HashTask(leaves, 0, leaves.size(), false));
+        return mergeUp(lvl, (int)2);
+    };
+
+    private static byte[] mergeUp(byte[][] lvl, int ext) throws XACryptoException {
+        while (lvl.length > 1) {
+            int nx = (lvl.length + 1) / 2;
+            byte[][] up = new byte[nx][];
+            for (int i = 0; i < lvl.length - 1; i += 2) {
+                up[i / 2] = (ext == 1)
+                        ? hash(conc(lvl[i], lvl[i + 1]))
+                        : doubleHash(conc(lvl[i], lvl[i + 1]));
+            }
+            if (lvl.length % 2 == 1) up[nx-1] = lvl[lvl.length - 1];
+        }
+        return lvl[0];
     }
 
     static byte[] conc(byte[] a, byte[] b) {
