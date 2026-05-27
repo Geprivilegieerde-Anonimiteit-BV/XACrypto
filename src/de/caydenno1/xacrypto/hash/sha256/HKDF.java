@@ -25,7 +25,7 @@ public class HKDF {
         for (int i=1;i<=n;i++){
             byte[] in = new byte[t.length + inf.length + 1];
             System.arraycopy(t, 0, in, 0, t.length);
-            System.arraycopy(inf, 0, inf, t.length, inf.length);
+            System.arraycopy(inf, 0, in, t.length, inf.length);
             in[t.length+inf.length] = (byte) i;
             t = hmac(prk,in);
             System.arraycopy(t,0,okm,(i-1) * 32, 32);

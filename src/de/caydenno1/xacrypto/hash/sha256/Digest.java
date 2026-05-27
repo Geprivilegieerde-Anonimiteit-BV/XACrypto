@@ -35,7 +35,7 @@ public final class Digest {
         if (bufLen > 0) {
             int fil = Math.min(64 - bufLen, l);
             System.arraycopy(d,o,buf,bufLen,fil);
-            bufLen += fil;o+=fil;l+=fil;
+            bufLen += fil;o+=fil;l-=fil;
             if (bufLen == 64) { compress(s, buf, 0); bufLen=0; }
         }
 
@@ -65,7 +65,7 @@ public final class Digest {
         byte[] t = new byte[bufLen];
         System.arraycopy(buf,0,t,0,bufLen);
         long bit = total * 8L;
-        int pad = 64 - (int)((bufLen+1+8) % 64);
+        int pad = 64 - (int)((bufLen+1+8) % 64)%64;
         if (pad<0) pad += 64;
         int total = bufLen + 1 + pad + 8;
 
@@ -79,7 +79,7 @@ public final class Digest {
 
         int[] sa = s.clone();
         for (int off = 0; off < last.length; off += 64) { compress(sa, last, off); }
-        byte[] o = Word2Byte(s);
+        byte[] o = Word2Byte(sa);
         reset();
         return o;
     }

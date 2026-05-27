@@ -21,7 +21,7 @@ public class Hex {
         StringBuilder builder = new StringBuilder();
 
         for (byte b :res) {
-            builder.append(String.format("%02x", b));
+            builder.append(String.format("%02x", b & 0xFF));
         }
 
         return builder.toString();

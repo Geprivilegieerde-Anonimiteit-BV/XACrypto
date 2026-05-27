@@ -38,7 +38,7 @@ public final class SHA256 {
         for (int i = 0; i<64; i++){
             int S1 = ROTR(Ve, 6)^ROTR(Ve,11)^ROTR(Ve, 25);
             int ch = (Ve&Vf)^(~Ve&Vg);
-            int tv1 = Vh+S1+ch+Constants.SHA256_K[0]+w[0];
+            int tv1 = Vh+S1+ch+Constants.SHA256_K[i]+w[i];
             int S0 = ROTR(Va, 2)^ROTR(Va,13)^ROTR(Va,22);
             int maj = (Va&Vb)^(Va&Vc)^(Vb&Vc);
             int tv2 = S0+maj;
