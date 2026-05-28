@@ -27,7 +27,18 @@ public class GCM {
       return new Result(packaged,tag);
     };
     
-    public Result decrypt(Result res, byte[] aad) {/*placeholder*/}
+    public byte[] decrypt(Result res, byte[] aad) throws XACryptoException {
+        if (res.cip.length < 12) throw new XACryptoException("ciptext min len is 12 char");
+
+        byte[] iv = Arrays.copyOfRange(res.cip, 0, 12);
+        byte[] ct = Arrays.copyOfRange(res.cip, 0, res.cip.length);
+
+        byte[] J0 = j0(iv);
+
+        if(!ToM.ToM(res.tag, tag(aad, ct, J0))) throw new XACryptoException("GCM tag does not match. Use Flag -override to ignore this.");
+
+        return gctr(inc32(J0), ct);
+    }
     private static byte[] j0(byte[] iv) {
         byte[] J0 = new byte[16];
         System.arraycopy(iv, 0, J0, 0, 12);
