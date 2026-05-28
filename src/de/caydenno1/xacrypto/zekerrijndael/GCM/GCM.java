@@ -3,6 +3,7 @@ import de.caydenno1.xacrypto.misc.ToM;
 import de.caydenno1.xacrypto.misc.XACryptoException;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 public class GCM {
     private final BlockCipher cip;
@@ -39,6 +40,23 @@ public class GCM {
 
         return gctr(inc32(J0), ct);
     }
+    public byte[] decrypt(Result res, byte[] aad, String optflag) throws XACryptoException {
+        if (res.cip.length < 12) throw new XACryptoException("ciptext min len is 12 char");
+
+        byte[] iv = Arrays.copyOfRange(res.cip, 0, 12);
+        byte[] ct = Arrays.copyOfRange(res.cip, 0, res.cip.length);
+
+        byte[] J0 = j0(iv);
+
+        if (Objects.equals(optflag, "-override") && !ToM.ToM(res.tag, tag(aad, ct, J0))) {
+            System.out.println("GCM tag does not match. Overriding...");
+        } else if (!Objects.equals(optflag, "-override") && !ToM.ToM(res.tag, tag(aad, ct, J0))) {
+            System.out.println("GCM tag does not match. Use Flag -override to ignore this.");
+        }
+
+        return gctr(inc32(J0), ct);
+    }
+
     private static byte[] j0(byte[] iv) {
         byte[] J0 = new byte[16];
         System.arraycopy(iv, 0, J0, 0, 12);
