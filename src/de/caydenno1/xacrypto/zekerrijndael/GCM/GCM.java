@@ -32,7 +32,7 @@ public class GCM {
         if (res.cip.length < 12) throw new XACryptoException("ciptext min len is 12 char");
 
         byte[] iv = Arrays.copyOfRange(res.cip, 0, 12);
-        byte[] ct = Arrays.copyOfRange(res.cip, 0, res.cip.length);
+        byte[] ct = Arrays.copyOfRange(res.cip, 12, res.cip.length);
 
         byte[] J0 = j0(iv);
 
@@ -44,7 +44,7 @@ public class GCM {
         if (res.cip.length < 12) throw new XACryptoException("ciptext min len is 12 char");
 
         byte[] iv = Arrays.copyOfRange(res.cip, 0, 12);
-        byte[] ct = Arrays.copyOfRange(res.cip, 0, res.cip.length);
+        byte[] ct = Arrays.copyOfRange(res.cip, 12, res.cip.length);
 
         byte[] J0 = j0(iv);
 
