@@ -1,10 +1,10 @@
-package de.caydenno1.xacrypto.zekerrijndael;
+package de.caydenno1.xacrypto.zekerrijndael.GCM;
 
 import java.util.Arrays;
 
 import static de.caydenno1.xacrypto.zekerrijndael.UnchangingData.*;
 
-public final class AES128 {
+public final class AES128 implements BlockCipher {
 
     private final byte[][] keys = new byte[44][4];
 

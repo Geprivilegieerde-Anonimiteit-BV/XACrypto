@@ -1,5 +1,5 @@
 A multi-purpose Cryptography library in Java. Working on it day by day, slowly. Someday this will be complete, today is not that day.
-To be clear, this is **NOT** mean't to be a replacement/alternative to BouncyCastle. Instead, it is meant to include what BouncyCastle does not have.
+To be clear, this is **NOT** mean't to be a replacement/alternative to BouncyCastle. Instead, it is meant to include what BouncyCastle does not have. I do not take any code whatsoever from OpenSSL or BouncyCastle for that reason.
 
 ### Current Objective: ZekerRijndael (custom from-scratch AES-128 block cipher)
 ### Note: i'm creating ZekerRijndael as it can be used for creating the following encryption ciphers: AES-CTR; AES-OFB; AES-CFB. Block modes include AES-CBC; AES-ECB. And of course AES-GCM + ASE-CCM
