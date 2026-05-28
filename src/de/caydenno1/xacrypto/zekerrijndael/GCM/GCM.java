@@ -1,4 +1,8 @@
 package de.caydenno1.xacrypto.zekerrijndael.GCM;
+import de.caydenno1.xacrypto.misc.ToM;
+import de.caydenno1.xacrypto.misc.XACryptoException;
+
+import java.util.Arrays;
 
 public class GCM {
     private final BlockCipher cip;
@@ -9,6 +13,21 @@ public class GCM {
         byte[] H = cip.encryptBlock(new byte[16]);
         this.gh = new GHASH(H);
     }
+
+    public Result encrypt(byte[] pln, byte[] aad, byte[] iv) throws XACryptoException {
+      if (iv.length != 12) throw new XACryptoException("iv must be total 12 bytes :)", (byte)0x12);
+
+      byte[] J0  = j0(iv);
+      byte[] ct  = gctr(inc32(J0), pln);
+      byte[] tag = tag(aad, ct, J0);
+
+      byte[] packaged = new byte[12+ct.length];
+      System.arraycopy(iv,0,packaged,0,12);
+      System.arraycopy(ct, 0, packaged, 12, ct.length);
+      return new Result(packaged,tag);
+    };
+    
+    public Result decrypt(Result res, byte[] aad) {/*placeholder*/}
     private static byte[] j0(byte[] iv) {
         byte[] J0 = new byte[16];
         System.arraycopy(iv, 0, J0, 0, 12);
@@ -21,9 +40,20 @@ public class GCM {
         for (int i = 0; i < 16; i++) S[i] ^= EJ0[i];
         return S;
     }
+    private byte[] gctr(byte[] icb, byte[] in) {
+        byte[] o = new byte[in.length];
+        byte[] cnt = Arrays.copyOf(icb, 16);
+        for (int i = 0 ; i < in.length ; i += 16){
+            byte[] ks =cip.encryptBlock(cnt);
+            int len = Math.min(16, in.length -i);
+            for (int j = 0; j < len; j++) o[i + j] = (byte)(in[i + j] ^ ks[j]);
+            if (i+16<in.length) cnt = inc32(cnt);
+        }
+        return o;
+    }
     private static byte[] inc32(byte[] b) {
-        byte[] o = Arrays.copyof(b,16);
-        for (int i = 15; i >= 12; i--) if (++out[i] != 0) break;
+        byte[] o = Arrays.copyOf(b,16);
+        for (int i = 15; i >= 12; i--) if (++o[i] != 0) break;
         return o;
     }
 }
