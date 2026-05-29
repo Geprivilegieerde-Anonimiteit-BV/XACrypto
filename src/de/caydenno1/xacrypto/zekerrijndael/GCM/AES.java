@@ -65,7 +65,7 @@ public final class AES implements BlockCipher {
     private void sub(byte[][] s) {
         for (int c = 0; c < 4; c++) {
             for (int r = 0; r < 4; r++) {
-                s[r][c] = (byte)(s[r][c] ^ keys[round * 4 + c][r]);
+                s[r][c] = (byte)(s[r][c] ^ keys[r * 4 + c][r]);
             }
         }
     }
