@@ -5,7 +5,7 @@ import de.caydenno1.xacrypto.misc.XACryptoException;
 import java.util.Arrays;
 
 import static de.caydenno1.xacrypto.zekerrijndael.UnchangingData.*;
-
+@SuppressWarnings("unused")
 public final class AES implements BlockCipher {
     public final int bits;
     public int kc;
@@ -34,11 +34,11 @@ public final class AES implements BlockCipher {
             default -> throw new XACryptoException("only 128, 192 and 256 bit ciphers are supported atm. sorry :%");
         };
 
-        byte[][] s = new byte[4][4];
+            byte[][] s = new byte[4][4];
 
-        for (int i = 0; i < 16; i++) {
-            s[i & 3][i >> 2] = input[i];
-        }
+            for (int i = 0; i < 16; i++) {
+                s[i >> 2][i & 3] = input[i];
+            }
 
         addRoundKey(s, 0);
 
@@ -65,13 +65,12 @@ public final class AES implements BlockCipher {
     private void sub(byte[][] s) {
         for (int c = 0; c < 4; c++) {
             for (int r = 0; r < 4; r++) {
-                s[r][c] = SBOX[s[r][c] & 0xFF];
+                s[r][c] = (byte)(s[r][c] ^ keys[round * 4 + c][r]);
             }
         }
     }
 
     private void shift(byte[][] s) {
-
         byte t;
 
         t = s[1][0];
@@ -87,13 +86,12 @@ public final class AES implements BlockCipher {
         s[2][2] = t;
         s[2][3] = t2;
 
-        t = s[3][3];
-        s[3][3] = s[3][2];
-        s[3][2] = s[3][1];
-        s[3][1] = s[3][0];
-        s[3][0] = t;
+        t = s[3][0];
+        s[3][0] = s[3][1];
+        s[3][1] = s[3][2];
+        s[3][2] = s[3][3];
+        s[3][3] = t;
     }
-
     private void mixColumns(byte[][] s) {
 
         for (int c = 0; c < 4; c++) {
@@ -112,7 +110,7 @@ public final class AES implements BlockCipher {
 
     private byte gm2(byte b) {
         int x = b & 0xFF;
-        return (byte)(((x << 1) ^ ((x & 0x80) != 0 ? 0x1b : 0)) & 0xFF);
+        return (byte)((((x << 1) & 0xFF) ^ ((x & 0x80) != 0 ? 0x1b : 0)));
     }
 
     private byte gm3(byte b) {
@@ -156,7 +154,7 @@ public final class AES implements BlockCipher {
                     temp[j] = SBOX[temp[j] & 0xFF];
                 }
 
-                temp[0] ^= (byte)(RCON[i / tem] >>> 24);
+                temp[0] ^= (byte) RCON[i / tem];
             }
 
             if (bits == 256 && i % 8 == 4) for (int j = 0 ; j < 4 ; j++) temp[j] = SBOX[temp[j] & 0xFF];
@@ -168,6 +166,8 @@ public final class AES implements BlockCipher {
     public byte[] encryptCBC(byte[] ln, byte[] iv) throws XACryptoException {
 
         int padLen = 16 - (ln.length % 16);
+        if (padLen == 0) padLen = 16;
+
         byte[] pln = Arrays.copyOf(ln, ln.length + padLen);
         for (int i = ln.length; i < pln.length; i++) {
             pln[i] = (byte) padLen;
