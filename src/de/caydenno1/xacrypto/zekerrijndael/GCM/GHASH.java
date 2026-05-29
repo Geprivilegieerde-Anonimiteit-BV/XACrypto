@@ -14,8 +14,8 @@ public class GHASH {
 
     public byte[] compute(byte[] aad, byte[] cip){
         byte[] Y = new byte[16];
-        Y = processBlocks(Y, aad);
-        Y = processBlocks(Y, cip);
+        Y = proc(Y, aad);
+        Y = proc(Y, cip);
         byte[] lenBlock = buildLenBlock(
                 aad.length * 8L,
                 cip.length * 8L
@@ -24,7 +24,7 @@ public class GHASH {
         Y = multi(Y,H);
         return Y;
     }
-    private byte[] processBlocks(byte[]Y, byte[] in) {
+    private byte[] proc(byte[]Y, byte[] in) {
         for (int off = 0; off < in.length; off+=16){
             byte[] bloc = new byte[16];
             int len = Math.min(16, in.length - off);
@@ -42,12 +42,12 @@ public class GHASH {
             int biindex = 7 - (bit%8);
 
             if (((X[byindex] >> biindex) & 1) == 1) Z = xor(Z,V);
-            RShift(V);
+            RS(V);
             if ((V[15] & 1) != 0) V = xor(V,UnchangingData.R);
         }
         return Z;
     }
-    private void RShift(byte[] bloc) {
+    private void RS(byte[] bloc) {
         int c = 0 ;
         for (int i = 0 ; i < 16 ; i++){
             int val = bloc[i] & 0xFF;
