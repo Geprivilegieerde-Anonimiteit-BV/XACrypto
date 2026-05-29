@@ -30,8 +30,8 @@ public class GCM {
       System.arraycopy(ct, 0, packaged, 12, ct.length);
 
       return new Result(packaged,tag);
-    };
-
+    }
+    
     public byte[] decrypt(Result res, byte[] aad) throws XACryptoException {
         return dec(res, aad, 12, false);
     }

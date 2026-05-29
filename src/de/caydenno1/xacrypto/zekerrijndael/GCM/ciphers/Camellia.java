@@ -3,6 +3,7 @@ package de.caydenno1.xacrypto.zekerrijndael.GCM.ciphers;
 import de.caydenno1.xacrypto.misc.XACryptoException;
 import de.caydenno1.xacrypto.zekerrijndael.GCM.BlockCipher;
 import de.caydenno1.xacrypto.zekerrijndael.UnchangingData;
+import de.caydenno1.xacrypto.hash.ROT;
 
 public class Camellia implements BlockCipher {
     private final long[] subkeys = new long[26];
@@ -78,58 +79,58 @@ public class Camellia implements BlockCipher {
         subkeys[2]  = KA1;
         subkeys[3]  = KA2;
 
-        long KLrot15_1 = ROTL64(KL1, KL2, 15)[0];
-        long KLrot15_2 = ROTL64(KL1, KL2, 15)[1];
+        long KLrot15_1 = ROT.ROTL64(KL1, KL2, 15)[0];
+        long KLrot15_2 = ROT.ROTL64(KL1, KL2, 15)[1];
         subkeys[4] = KLrot15_1;
         subkeys[5] = KLrot15_2;
 
-        long KArot15_1 = ROTL64(KA1, KA2, 15)[0];
-        long KArot15_2 = ROTL64(KA1, KA2, 15)[1];
+        long KArot15_1 = ROT.ROTL64(KA1, KA2, 15)[0];
+        long KArot15_2 = ROT.ROTL64(KA1, KA2, 15)[1];
         subkeys[6] = KArot15_1;
         subkeys[7] = KArot15_2;
 
-        long KArot30_1 = ROTL64(KA1, KA2, 30)[0];
-        long KArot30_2 = ROTL64(KA1, KA2, 30)[1];
+        long KArot30_1 = ROT.ROTL64(KA1, KA2, 30)[0];
+        long KArot30_2 = ROT.ROTL64(KA1, KA2, 30)[1];
         subkeys[8] = (KArot30_1 >>> 32) | (KArot30_1 << 32);
         subkeys[9]  = (KArot30_2 >>> 32) | (KArot30_2 << 32);
 
-        long KLrot45_1 = ROTL64(KL1, KL2, 45)[0];
-        long KLrot45_2 = ROTL64(KL1, KL2, 45)[1];
+        long KLrot45_1 = ROT.ROTL64(KL1, KL2, 45)[0];
+        long KLrot45_2 = ROT.ROTL64(KL1, KL2, 45)[1];
         subkeys[10] = KLrot45_1;
         subkeys[11] = KLrot45_2;
 
-        long KArot45_1 = ROTL64(KA1, KA2, 45)[0];
-        long KArot45_2 = ROTL64(KA1, KA2, 45)[1];
+        long KArot45_1 = ROT.ROTL64(KA1, KA2, 45)[0];
+        long KArot45_2 = ROT.ROTL64(KA1, KA2, 45)[1];
         subkeys[12] = KArot45_1;
         subkeys[13] = KArot45_2;
 
-        long KLrot60_1 = ROTL64(KL1, KL2, 60)[0];
-        long KLrot60_2 = ROTL64(KL1, KL2, 60)[1];
+        long KLrot60_1 = ROT.ROTL64(KL1, KL2, 60)[0];
+        long KLrot60_2 = ROT.ROTL64(KL1, KL2, 60)[1];
         subkeys[14] = KLrot60_1;
         subkeys[15] = KLrot60_2;
 
-        long KLrot77_1 = ROTL64(KL1, KL2, 77)[0];
-        long KLrot77_2 = ROTL64(KL1, KL2, 77)[1];
+        long KLrot77_1 = ROT.ROTL64(KL1, KL2, 77)[0];
+        long KLrot77_2 = ROT.ROTL64(KL1, KL2, 77)[1];
         subkeys[16] = (KLrot77_1 >>> 32) | (KLrot77_1 << 32);
         subkeys[17] = (KLrot77_2 >>> 32) | (KLrot77_2 << 32);
 
-        long KLrot94_1 = ROTL64(KL1, KL2, 94)[0];
-        long KLrot94_2 = ROTL64(KL1, KL2, 94)[1];
+        long KLrot94_1 = ROT.ROTL64(KL1, KL2, 94)[0];
+        long KLrot94_2 = ROT.ROTL64(KL1, KL2, 94)[1];
         subkeys[18] = KLrot94_1;
         subkeys[19] = KLrot94_2;
 
-        long KArot94_1 = ROTL64(KA1, KA2, 94)[0];
-        long KArot94_2 = ROTL64(KA1, KA2, 94)[1];
+        long KArot94_1 = ROT.ROTL64(KA1, KA2, 94)[0];
+        long KArot94_2 = ROT.ROTL64(KA1, KA2, 94)[1];
         subkeys[20] = KArot94_1;
         subkeys[21] = KArot94_2;
 
-        long KLrot111_1 = ROTL64(KL1, KL2, 111)[0];
-        long KLrot111_2 = ROTL64(KL1, KL2, 111)[1];
+        long KLrot111_1 = ROT.ROTL64(KL1, KL2, 111)[0];
+        long KLrot111_2 = ROT.ROTL64(KL1, KL2, 111)[1];
         subkeys[22] = KLrot111_1;
         subkeys[23] = KLrot111_2;
 
-        long KArot111_1 = ROTL64(KA1, KA2, 111)[0];
-        long KArot111_2 = ROTL64(KA1, KA2, 111)[1];
+        long KArot111_1 = ROT.ROTL64(KA1, KA2, 111)[0];
+        long KArot111_2 = ROT.ROTL64(KA1, KA2, 111)[1];
         subkeys[24] = KArot111_1;
         subkeys[25] = KArot111_2;
     }
@@ -158,15 +159,44 @@ public class Camellia implements BlockCipher {
         int y7 = t[3] ^ t[4] ^ t[5] ^ t[6] ^ t[8];
         int y8 = t[1] ^ t[4] ^ t[5] ^ t[6] ^ t[7];
 
-        long o = ((long) y1 << 56) | ((long) y2 << 48) | ((long) y3 << 40) | ((long) y4 << 32) |
+        return ((long) y1 << 56) | ((long) y2 << 48) | ((long) y3 << 40) | ((long) y4 << 32) |
                 ((long) y5 << 24) | ((long) y6 << 16) | ((long) y7 << 8)  | (long) y8;
-
-        return o;
     }
-    private long FL(long F_IN, long KE) {return 0L;}
-    private long FLINV(long FLINV_IN, long KE) {return 0L;}
-    private long ROTL32(long v, int shift) {return 0L;}
-    private long[] ROTL64(long l, long r, int shift) {return new long[10];}
-    private long bytes2Long(byte[] b, int off) {return 0L;}
-    private void long2Bytes(long v, byte[] b, int off) {};
+
+    private long FL(long FL_IN, long KE) {
+        long x1 = FL_IN >>> 32;
+        long x2 = FL_IN & 0xFFFFFFFFL;
+        long k1 = KE >>> 32;
+        long k2 = KE & 0xFFFFFFFFL;
+
+        long y2 = x2 ^ ROT.ROTL32((x1 & k1), 1);
+        long y1 = x1 ^ (y2 | k2);
+
+        return (y1 << 32) | (y2 & 0xFFFFFFFFL);
+    }
+    @SuppressWarnings("UnnecessaryLocalVariable") // <- im expert dev/programmer!
+    private long FLINV(long FLINV_IN, long KE) {
+        long y1 = FLINV_IN;
+        long y2 = FLINV_IN & 0xFFFFFFFFL;
+        long k1 = KE >>> 3;
+        long k2 = KE & 0xFFFFFFFFL;
+
+        long x1 = y1 ^ (y2 | k2);
+        long x2 = y2 ^ ROT.ROTL32((x1 | k1), 1);
+
+        return (x1 << 32) | (x2 | 0xFFFFFFFFL);
+    }
+    private long bytes2Long(byte[] b, int off) {
+        long res = 0;
+        for (int i = 0; i < 8; i++) {
+            int shift = 56 - (i * 8);
+            res |= ((long) (b[off + i] & 0xFF) << shift);
+        }
+        return res;
+    }
+    private void long2Bytes(long v, byte[] b, int off) {
+        for (int i = 0; i < 8; i++) {
+            b[off + i] = (byte) (v >>> (56 - (i * 8)));
+        }
+    }
 }
