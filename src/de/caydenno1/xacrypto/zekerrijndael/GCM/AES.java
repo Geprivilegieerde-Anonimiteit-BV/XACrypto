@@ -36,13 +36,13 @@ public final class AES implements BlockCipher {
 
         byte[][] s = new byte[4][4];
 
-        for (int i = 0; i < m; i++) {
+        for (int i = 0; i < 16; i++) {
             s[i & 3][i >> 2] = input[i];
         }
 
-        addRoundKey(s, m);
+        addRoundKey(s, 0);
 
-        for (int r = 1; r < 10; r++) {
+        for (int r = 1; r < m; r++) {
             sub(s);
             shift(s);
             mixColumns(s);
@@ -51,7 +51,7 @@ public final class AES implements BlockCipher {
 
         sub(s);
         shift(s);
-        addRoundKey(s, 10);
+        addRoundKey(s, m);
 
         byte[] o = new byte[16];
 
@@ -144,7 +144,7 @@ public final class AES implements BlockCipher {
 
             byte[] temp = Arrays.copyOf(keys[i - 1], 4);
 
-            if (i % tem == 0 && bits != 256) {
+            if (i % tem == 0) {
 
                 byte t = temp[0];
                 temp[0] = temp[1];
@@ -156,16 +156,22 @@ public final class AES implements BlockCipher {
                     temp[j] = SBOX[temp[j] & 0xFF];
                 }
 
-                temp[0] ^= (byte)(RCON[i / 4] >>> 24);
+                temp[0] ^= (byte)(RCON[i / tem] >>> 24);
             }
 
             if (bits == 256 && i % 8 == 4) for (int j = 0 ; j < 4 ; j++) temp[j] = SBOX[temp[j] & 0xFF];
 
-            for (int j = 0; j < 4; j++) keys[i][j] = (byte)(keys[i - 4][j] ^ temp[j]);
+            for (int j = 0; j < 4; j++) keys[i][j] = (byte)(keys[i - tem][j] ^ temp[j]);
         }
     }
 
-    public byte[] encryptCBC(byte[] pln, byte[] iv) throws XACryptoException {
+    public byte[] encryptCBC(byte[] ln, byte[] iv) throws XACryptoException {
+
+        int padLen = 16 - (ln.length % 16);
+        byte[] pln = Arrays.copyOf(ln, ln.length + padLen);
+        for (int i = ln.length; i < pln.length; i++) {
+            pln[i] = (byte) padLen;
+        }
 
         byte[] o = new byte[pln.length];
         byte[] prev = Arrays.copyOf(iv, 16);
@@ -188,14 +194,14 @@ public final class AES implements BlockCipher {
         return o;
     }
 
-    public byte[] encryptCTR(byte[] pln, byte[] nonce) throws XACryptoException {
+    public byte[] encryptCTR(byte[] ln, byte[] nonce) throws XACryptoException {
 
-        byte[] o = new byte[pln.length];
+        byte[] o = new byte[ln.length];
 
         byte[] cnt = Arrays.copyOf(nonce, 16);
         byte[] ks;
 
-        for (int i = 0; i < pln.length; i += 16) {
+        for (int i = 0; i < ln.length; i += 16) {
 
             int ctr = i >>> 4;
 
@@ -206,8 +212,9 @@ public final class AES implements BlockCipher {
 
             ks = encryptBlock(cnt);
 
-            for (int j = 0; j < 16; j++) {
-                o[i + j] = (byte) (pln[i + j] ^ ks[j]);
+            int limit = Math.min(16, ln.length - i);
+            for (int j = 0; j < limit; j++) {
+                o[i + j] = (byte) (ln[i + j] ^ ks[j]);
             }
         }
 
