@@ -26,7 +26,7 @@ public class GCM {
       System.arraycopy(iv,0,packaged,0,12);
       System.arraycopy(ct, 0, packaged, 12, ct.length);
       return new Result(packaged,tag);
-    };
+    }
     
     public byte[] decrypt(Result res, byte[] aad) throws XACryptoException {
         if (res.cip.length < 12) throw new XACryptoException("ciptext min len is 12 char");
