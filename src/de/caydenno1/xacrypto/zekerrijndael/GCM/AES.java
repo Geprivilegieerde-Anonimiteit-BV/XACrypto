@@ -1,28 +1,48 @@
 package de.caydenno1.xacrypto.zekerrijndael.GCM;
 
+import de.caydenno1.xacrypto.misc.XACryptoException;
+
 import java.util.Arrays;
 
 import static de.caydenno1.xacrypto.zekerrijndael.UnchangingData.*;
+@SuppressWarnings("unused")
+public final class AES implements BlockCipher {
+    public final int bits;
+    public int kc;
+    private final byte[][] keys;
 
-public final class AES256 implements BlockCipher {
+    public AES(byte[] key, int bits) throws XACryptoException {
+        this.bits = bits;
+        this.kc = switch (bits) {
+            case 128 -> 44;
+            case 192 -> 52;
+            case 256 -> 60;
+            default -> throw new XACryptoException(
+                    "only 128, 192 and 256 bit ciphers are supported atm. sorry :%"
+            );
+        };
+        this.keys = new byte[kc][4];
 
-    private final byte[][] keys = new byte[60][4];
-
-    public AES256(byte[] key) {
         keyExpansion(key);
     }
 
-    public byte[] encryptBlock(byte[] input) {
+    public byte[] encryptBlock(byte[] input) throws XACryptoException {
+        int m = switch (bits) {
+            case 128 -> 10;
+            case 192 -> 12;
+            case 256 -> 14;
+            default -> throw new XACryptoException("only 128, 192 and 256 bit ciphers are supported atm. sorry :%");
+        };
 
-        byte[][] s = new byte[4][4];
+            byte[][] s = new byte[4][4];
 
-        for (int i = 0; i < 16; i++) {
-            s[i & 3][i >> 2] = input[i];
-        }
+            for (int i = 0; i < 16; i++) {
+                s[i >> 2][i & 3] = input[i];
+            }
 
         addRoundKey(s, 0);
 
-        for (int r = 1; r < 14; r++) {
+        for (int r = 1; r < m; r++) {
             sub(s);
             shift(s);
             mixColumns(s);
@@ -31,7 +51,7 @@ public final class AES256 implements BlockCipher {
 
         sub(s);
         shift(s);
-        addRoundKey(s, 14);
+        addRoundKey(s, m);
 
         byte[] o = new byte[16];
 
@@ -45,13 +65,12 @@ public final class AES256 implements BlockCipher {
     private void sub(byte[][] s) {
         for (int c = 0; c < 4; c++) {
             for (int r = 0; r < 4; r++) {
-                s[r][c] = SBOX[s[r][c] & 0xFF];
+                s[r][c] = (byte)(s[r][c] ^ keys[round * 4 + c][r]);
             }
         }
     }
 
     private void shift(byte[][] s) {
-
         byte t;
 
         t = s[1][0];
@@ -67,13 +86,12 @@ public final class AES256 implements BlockCipher {
         s[2][2] = t;
         s[2][3] = t2;
 
-        t = s[3][3];
-        s[3][3] = s[3][2];
-        s[3][2] = s[3][1];
-        s[3][1] = s[3][0];
-        s[3][0] = t;
+        t = s[3][0];
+        s[3][0] = s[3][1];
+        s[3][1] = s[3][2];
+        s[3][2] = s[3][3];
+        s[3][3] = t;
     }
-
     private void mixColumns(byte[][] s) {
 
         for (int c = 0; c < 4; c++) {
@@ -92,7 +110,7 @@ public final class AES256 implements BlockCipher {
 
     private byte gm2(byte b) {
         int x = b & 0xFF;
-        return (byte)(((x << 1) ^ ((x & 0x80) != 0 ? 0x1b : 0)) & 0xFF);
+        return (byte)((((x << 1) & 0xFF) ^ ((x & 0x80) != 0 ? 0x1b : 0)));
     }
 
     private byte gm3(byte b) {
@@ -107,17 +125,24 @@ public final class AES256 implements BlockCipher {
         }
     }
 
-    private void keyExpansion(byte[] key) {
-
-        for (int i = 0; i < 8; i++) {
+    private void keyExpansion(byte[] key) throws XACryptoException {
+        int tem = switch(bits) {
+            case 128 -> 4;
+            case 192 -> 6;
+            case 256 -> 8;
+            default -> throw new XACryptoException(
+                    "only 128, 192 and 256 bit ciphers are supported atm. sorry :%"
+            );
+        };
+        for (int i = 0; i < tem; i++) {
             System.arraycopy(key, i * 4, keys[i], 0, 4);
         }
 
-        for (int i = 8; i < 60; i++) {
+        for (int i = 4; i < kc; i++) {
 
             byte[] temp = Arrays.copyOf(keys[i - 1], 4);
 
-            if (i % 8 == 0) {
+            if (i % tem == 0) {
 
                 byte t = temp[0];
                 temp[0] = temp[1];
@@ -129,22 +154,24 @@ public final class AES256 implements BlockCipher {
                     temp[j] = SBOX[temp[j] & 0xFF];
                 }
 
-                temp[0] ^= (byte)(RCON[i / 8] >>> 24);
-
-            } else if (i % 8 == 4) {
-
-                for (int j = 0; j < 4; j++) {
-                    temp[j] = SBOX[temp[j] & 0xFF];
-                }
+                temp[0] ^= (byte) RCON[i / tem];
             }
 
-            for (int j = 0; j < 4; j++) {
-                keys[i][j] = (byte)(keys[i - 8][j] ^ temp[j]);
-            }
+            if (bits == 256 && i % 8 == 4) for (int j = 0 ; j < 4 ; j++) temp[j] = SBOX[temp[j] & 0xFF];
+
+            for (int j = 0; j < 4; j++) keys[i][j] = (byte)(keys[i - tem][j] ^ temp[j]);
         }
     }
 
-    public byte[] encryptCBC(byte[] pln, byte[] iv) {
+    public byte[] encryptCBC(byte[] ln, byte[] iv) throws XACryptoException {
+
+        int padLen = 16 - (ln.length % 16);
+        if (padLen == 0) padLen = 16;
+
+        byte[] pln = Arrays.copyOf(ln, ln.length + padLen);
+        for (int i = ln.length; i < pln.length; i++) {
+            pln[i] = (byte) padLen;
+        }
 
         byte[] o = new byte[pln.length];
         byte[] prev = Arrays.copyOf(iv, 16);
@@ -167,14 +194,14 @@ public final class AES256 implements BlockCipher {
         return o;
     }
 
-    public byte[] encryptCTR(byte[] pln, byte[] nonce) {
+    public byte[] encryptCTR(byte[] ln, byte[] nonce) throws XACryptoException {
 
-        byte[] o = new byte[pln.length];
+        byte[] o = new byte[ln.length];
 
         byte[] cnt = Arrays.copyOf(nonce, 16);
         byte[] ks;
 
-        for (int i = 0; i < pln.length; i += 16) {
+        for (int i = 0; i < ln.length; i += 16) {
 
             int ctr = i >>> 4;
 
@@ -185,8 +212,9 @@ public final class AES256 implements BlockCipher {
 
             ks = encryptBlock(cnt);
 
-            for (int j = 0; j < 16; j++) {
-                o[i + j] = (byte) (pln[i + j] ^ ks[j]);
+            int limit = Math.min(16, ln.length - i);
+            for (int j = 0; j < limit; j++) {
+                o[i + j] = (byte) (ln[i + j] ^ ks[j]);
             }
         }
 
