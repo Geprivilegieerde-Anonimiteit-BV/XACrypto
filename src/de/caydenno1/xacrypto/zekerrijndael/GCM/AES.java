@@ -37,7 +37,7 @@ public final class AES implements BlockCipher {
             byte[][] s = new byte[4][4];
 
             for (int i = 0; i < 16; i++) {
-                s[i >> 2][i & 3] = input[i];
+                s[i & 3][i >> 2] = input[i];
             }
 
         addRoundKey(s, 0);
@@ -94,11 +94,11 @@ public final class AES implements BlockCipher {
         s[2][2] = t;
         s[2][3] = t2;
 
-        t = s[3][0];
-        s[3][0] = s[3][1];
-        s[3][1] = s[3][2];
-        s[3][2] = s[3][3];
-        s[3][3] = t;
+        t = s[3][3];
+        s[3][3] = s[3][2];
+        s[3][2] = s[3][1];
+        s[3][1] = s[3][0];
+        s[3][0] = t;
     }
     private static void mixColumns(byte[][] s) {
 
