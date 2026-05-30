@@ -5,8 +5,6 @@ import de.caydenno1.xacrypto.zekerrijndael.GCM.GHASH;
 import de.caydenno1.xacrypto.zekerrijndael.GCM.AES;
 import de.caydenno1.xacrypto.zekerrijndael.GCM.Result;
 
-import java.util.Arrays;
-
 interface AESCipher {
     Result encryptBlock(byte[] pln, byte[] key, byte[] nonce, byte[] aad) throws XACryptoException;
 }

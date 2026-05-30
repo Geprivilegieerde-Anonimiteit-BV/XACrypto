@@ -2,10 +2,16 @@ package de.caydenno1.xacrypto.zekerrijndael.GCM.ciphers;
 
 import de.caydenno1.xacrypto.misc.XACryptoException;
 import de.caydenno1.xacrypto.zekerrijndael.GCM.BlockCipher;
+import de.caydenno1.xacrypto.zekerrijndael.GCM.Result;
 import de.caydenno1.xacrypto.zekerrijndael.UnchangingData;
 import de.caydenno1.xacrypto.hash.ROT;
 
-public class Camellia implements BlockCipher {
+interface CamelliaCipher {
+    byte[] encryptBlock(byte[] in, int inputOffset, byte[] out, int outOffset) throws XACryptoException;
+    byte[] decryptBlock(byte[] in);
+}
+
+public class Camellia implements CamelliaCipher {
     private final long[] subkeys = new long[26];
 
     public Camellia(byte[] key) throws XACryptoException {
@@ -14,9 +20,9 @@ public class Camellia implements BlockCipher {
     };
 
     @Override
-    public byte[] encryptBlock(byte[] in) {
+    public byte[] encryptBlock(byte[] in, int inputOffset, byte[] out, int outOffset) {
         long d1 = bytes2Long(in, 0);
-        long d2 = bytes2Long(in, 8);
+        long d2 = bytes2Long(in, inputOffset + 8);
 
         d1 ^= subkeys[0];
         d2 ^= subkeys[1];
@@ -50,6 +56,47 @@ public class Camellia implements BlockCipher {
 
         d2 ^= subkeys[24];
         d1 ^= subkeys[25];
+
+        byte[] o = new byte[16];
+        long2Bytes(d2, o, outOffset);
+        long2Bytes(d1, o, outOffset+8);
+        return o;
+    }
+    public byte[] decryptBlock(byte[] in) {
+        long d1 = bytes2Long(in, 0);
+        long d2 = bytes2Long(in, 8);
+
+        d1 ^= subkeys[24];
+        d2 ^= subkeys[25];
+        d2 ^= F(d1, subkeys[23]);
+        d1 ^= F(d2, subkeys[22]);
+        d2 ^= F(d1, subkeys[21]);
+        d1 ^= F(d2, subkeys[20]);
+        d2 ^= F(d1, subkeys[19]);
+        d1 ^= F(d2, subkeys[18]);
+
+        d1 = FL(d1, subkeys[17]);
+        d2 = FLINV(d2, subkeys[16]);
+
+        d2 ^= F(d1, subkeys[15]);
+        d1 ^= F(d2, subkeys[14]);
+        d2 ^= F(d1, subkeys[13]);
+        d1 ^= F(d2, subkeys[12]);
+        d2 ^= F(d1, subkeys[11]);
+        d1 ^= F(d2, subkeys[10]);
+
+        d1 = FL(d1, subkeys[9]);
+        d2 = FLINV(d2, subkeys[8]);
+
+        d2 ^= F(d1, subkeys[7]);
+        d1 ^= F(d2, subkeys[6]);
+        d2 ^= F(d1, subkeys[5]);
+        d1 ^= F(d2, subkeys[4]);
+        d2 ^= F(d1, subkeys[3]);
+        d1 ^= F(d2, subkeys[2]);
+
+        d2 ^= subkeys[0];
+        d1 ^= subkeys[1];
 
         byte[] o = new byte[16];
         long2Bytes(d2, o, 0);
@@ -176,15 +223,15 @@ public class Camellia implements BlockCipher {
     }
     @SuppressWarnings("UnnecessaryLocalVariable") // <- im expert dev/programmer!
     private long FLINV(long FLINV_IN, long KE) {
-        long y1 = FLINV_IN;
+        long y1 = FLINV_IN >>> 32;
         long y2 = FLINV_IN & 0xFFFFFFFFL;
-        long k1 = KE >>> 3;
+        long k1 = KE >>> 32;
         long k2 = KE & 0xFFFFFFFFL;
 
         long x1 = y1 ^ (y2 | k2);
-        long x2 = y2 ^ ROT.ROTL32((x1 | k1), 1);
+        long x2 = y2 ^ ROT.ROTL32((x1 & k1), 1);
 
-        return (x1 << 32) | (x2 | 0xFFFFFFFFL);
+        return (x1 << 32) | (x2 & 0xFFFFFFFFL);
     }
     private long bytes2Long(byte[] b, int off) {
         long res = 0;
