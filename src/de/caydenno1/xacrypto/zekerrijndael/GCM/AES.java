@@ -21,12 +21,12 @@ public final class AES implements BlockCipher {
                     "only 128, 192 and 256 bit ciphers are supported atm. sorry :%"
             );
         };
-        this.keys = new byte[kc][4];
+        keys = new byte[kc][4];
 
         keyExpansion(key);
     }
 
-    public static byte[] encryptBlock(byte[] input) throws XACryptoException {
+    public byte[] encryptBlock(byte[] input) throws XACryptoException {
         int m = switch (bits) {
             case 128 -> 10;
             case 192 -> 12;
@@ -70,7 +70,7 @@ public final class AES implements BlockCipher {
 //        }
 //    }
 
-    private void sub(byte[][] s) {
+    private static void sub(byte[][] s) {
         for (int c = 0; c < 4; c++) {
             for (int r = 0; r < 4; r++) {
                 s[r][c] = SBOX[s[r][c] & 0xFF];
@@ -78,7 +78,7 @@ public final class AES implements BlockCipher {
         }
     }
 
-    private void shift(byte[][] s) {
+    private static void shift(byte[][] s) {
         byte t;
 
         t = s[1][0];
@@ -100,7 +100,7 @@ public final class AES implements BlockCipher {
         s[3][2] = s[3][3];
         s[3][3] = t;
     }
-    private void mixColumns(byte[][] s) {
+    private static void mixColumns(byte[][] s) {
 
         for (int c = 0; c < 4; c++) {
 
@@ -116,12 +116,12 @@ public final class AES implements BlockCipher {
         }
     }
 
-    private byte gm2(byte b) {
+    private static byte gm2(byte b) {
         int x = b & 0xFF;
         return (byte)((((x << 1) & 0xFF) ^ ((x & 0x80) != 0 ? 0x1b : 0)));
     }
 
-    private byte gm3(byte b) {
+    private static byte gm3(byte b) {
         return (byte)(gm2(b) ^ b);
     }
 

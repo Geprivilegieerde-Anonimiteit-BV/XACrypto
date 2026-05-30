@@ -18,7 +18,7 @@ public class AESGCM {
         byte[] S = gh.compute(aad, cip);
 
         byte[] J0 = Arrays.copyOf(nonce, 16);
-        byte[] TB = AES.encryptBlock(J0);
+        byte[] TB = new AES(key, 128).encryptBlock(J0);
 
         byte[] Tag = xor(TB, S);
 
