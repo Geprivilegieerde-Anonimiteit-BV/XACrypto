@@ -5,8 +5,14 @@ import de.caydenno1.xacrypto.zekerrijndael.GCM.GHASH;
 import de.caydenno1.xacrypto.zekerrijndael.GCM.AES;
 import de.caydenno1.xacrypto.zekerrijndael.GCM.Result;
 
+import java.util.Objects;
+
+import static de.caydenno1.xacrypto.misc.ToM.ToM;
+
 interface AESCipher {
     Result encryptBlock(byte[] pln, byte[] key, byte[] nonce, byte[] aad) throws XACryptoException;
+
+    byte[] decryptBlock(byte[] cip, byte[] key, byte[] nonce, byte[] aad, byte[] tag) throws XACryptoException;
 }
 
 public class AESGCM implements AESCipher {
@@ -35,5 +41,42 @@ public class AESGCM implements AESCipher {
         byte[] Tag = gh.xor(TB, S);
 
         return new Result(cip, Tag);
+    }
+    public byte[] decryptBlock(byte[] cip, byte[] key, byte[] nonce, byte[] aad, byte[] tag, String flag) throws XACryptoException {
+        return decBack(cip, key, nonce, aad, tag, Objects.equals(flag, "-override"));
+    }
+
+    public byte[] decryptBlock(byte[] cip, byte[] key, byte[] nonce, byte[] aad, byte[] tag) throws XACryptoException {
+        return decBack(cip, key, nonce, aad, tag, false);
+    }
+
+    private byte[] decBack(byte[] cip, byte[] key, byte[] nonce, byte[] aad, byte[] tag, boolean flag) throws XACryptoException {
+        byte[] zbyte = new byte[16];
+        byte[] J0 = new byte[16];
+
+        AES aes = new AES(key, 128);
+        byte[] H = aes.encryptBlock(zbyte);
+        GHASH gh = new GHASH(H);
+
+        if (nonce.length == 12) {
+            System.arraycopy(nonce, 0, J0, 0, 12);
+            J0[15] = 1;
+        } else {
+            J0 = gh.compNonce(H, nonce);
+        }
+
+        byte[] S = gh.compute(aad, cip);
+
+        byte[] TB = aes.encryptBlock(J0);
+
+        byte[] expectedTag = gh.xor(TB, S);
+
+        if (!ToM(tag, expectedTag) && !flag) {
+            throw new XACryptoException("Tag does not match. USE flag \"-override\" to ignore this.");
+        } else if (!ToM(tag,expectedTag) && flag) {
+            System.out.println("Continuing in insecure mode.");
+        }
+
+        return aes.encryptCTR(cip, J0);
     }
 }

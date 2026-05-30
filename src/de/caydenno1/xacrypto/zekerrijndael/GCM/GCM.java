@@ -86,13 +86,13 @@ public class GCM {
         }
     }
 
-    private byte[] tag(byte[] aad, byte[] ct, byte[] J0) throws XACryptoException, InvocationTargetException, IllegalAccessException {
+    private byte[] tag(byte[] aad, byte[] ct, byte[] J0) throws InvocationTargetException, IllegalAccessException {
         byte[] S   = gh.compute(aad, ct);
         byte[] EJ0 = (byte[]) this.encryptor.invoke(J0);
         for (int i = 0; i < 16; i++) S[i] ^= EJ0[i];
         return S;
     }
-    private byte[] gctr(byte[] icb, byte[] in) throws XACryptoException, InvocationTargetException, IllegalAccessException {
+    private byte[] gctr(byte[] icb, byte[] in) throws InvocationTargetException, IllegalAccessException {
         byte[] o = new byte[in.length];
         byte[] cnt = Arrays.copyOf(icb, 16);
         for (int i = 0 ; i < in.length ; i += 16){
