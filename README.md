@@ -11,6 +11,11 @@ To be clear, this is **NOT** mean't to be a replacement/alternative to BouncyCas
 
 ## View the "zekerRijndael" branch to see inprogress work.
 
+### Current Objective: ZekerRijndael (custom from-scratch AES-128 block cipher)
+### Note: i'm creating ZekerRijndael as it can be used for creating the following encryption ciphers: AES-CTR; AES-OFB; AES-CFB. Block modes include AES-CBC; AES-ECB. And of course AES-GCM + ASE-CCM
+
+## View the "zekerRijndael" branch to see inprogress work.
+
 Use `setopt interactivecomments` (zsh only) to allow using `#` for comments if you see errors like `zsh: command not found: #`
 
 Ensure Java + javac are installed, on MacOS it can be installed with Homebrew by running `brew install openjdk`
