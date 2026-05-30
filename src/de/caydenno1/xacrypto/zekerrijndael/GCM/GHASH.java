@@ -63,6 +63,37 @@ public class GHASH {
             c = next;
         }
     }
+    public byte[] compNonce(byte[] H, byte[] nonce){
+        byte[] Y = new byte[16];
+        byte[] blk = new byte[16];
+
+        int len = nonce.length;
+        int off = 0;
+
+        while (len > 0) {
+            Arrays.fill(blk, (byte)0);
+
+            int cl = Math.min(16, len);//count
+            System.arraycopy(nonce, off, blk, 0, cl);
+
+            multi(blk, H);
+
+            off += cl;
+            len -= cl;
+        }
+
+        Arrays.fill(blk, (byte)0);
+
+        long bL = (long)nonce.length *8;
+
+        for (int i = 8 ; i < 16 ; i++){
+            blk[i] = (byte) ((bL >>> (8 * (15-i))) & 0xFF);
+        }
+
+        Y = xor(Y,blk);
+        Y = multi(Y, H);
+        return Y;
+    }
     private byte[] buildLenBlock(long aad, long cipb) {
         ByteBuffer buf = ByteBuffer.allocate(16);
 

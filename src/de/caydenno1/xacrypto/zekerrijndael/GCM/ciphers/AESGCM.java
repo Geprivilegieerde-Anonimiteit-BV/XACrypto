@@ -13,17 +13,26 @@ interface AESCipher {
 
 public class AESGCM implements AESCipher {
     public Result encryptBlock(byte[] pln, byte[] key, byte[] nonce, byte[] aad) throws XACryptoException {
+
         byte[] zbyte = new byte[16];
-        byte[] H = new AES(key, 128).encryptBlock(zbyte);
+        byte[] J0 = new byte[16];
 
         AES aes = new AES(key, 128);
-        byte[] cip = aes.encryptCTR(pln, nonce);
-
+        byte[] H = aes.encryptBlock(zbyte);
         GHASH gh = new GHASH(H);
+
+        if (nonce.length == 12) {
+            System.arraycopy(nonce, 0, J0, 0, 12);
+            J0[15] = 1;
+        } else {
+           J0 = gh.compNonce(H, nonce);
+        }
+
+        byte[] cip = aes.encryptCTR(pln, J0);
+
         byte[] S = gh.compute(aad, cip);
 
-        byte[] J0 = Arrays.copyOf(nonce, 16);
-        byte[] TB = new AES(key, 128).encryptBlock(J0);
+        byte[] TB = aes.encryptBlock(J0);
 
         byte[] Tag = gh.xor(TB, S);
 
