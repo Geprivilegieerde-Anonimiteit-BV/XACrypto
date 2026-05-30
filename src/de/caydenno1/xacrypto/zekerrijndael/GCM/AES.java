@@ -26,7 +26,7 @@ public final class AES implements BlockCipher {
         keyExpansion(key);
     }
 
-    public byte[] encryptBlock(byte[] input) throws XACryptoException {
+    public static byte[] encryptBlock(byte[] input) throws XACryptoException {
         int m = switch (bits) {
             case 128 -> 10;
             case 192 -> 12;
@@ -62,10 +62,18 @@ public final class AES implements BlockCipher {
         return o;
     }
 
+//    private void sub(byte[][] s) {
+//        for (int c = 0; c < 4; c++) {
+//            for (int r = 0; r < 4; r++) {
+//                s[r][c] = (byte)(s[r][c] ^ keys[r * 4 + c][r]);
+//            }
+//        }
+//    }
+
     private void sub(byte[][] s) {
         for (int c = 0; c < 4; c++) {
             for (int r = 0; r < 4; r++) {
-                s[r][c] = (byte)(s[r][c] ^ keys[r * 4 + c][r]);
+                s[r][c] = SBOX[s[r][c] & 0xFF];
             }
         }
     }
@@ -134,6 +142,10 @@ public final class AES implements BlockCipher {
                     "only 128, 192 and 256 bit ciphers are supported atm. sorry :%"
             );
         };
+
+        if (key.length != 16 && key.length != 24 && key.length != 32)
+            throw new XACryptoException("aes keys must be 16, 24, or 32 in length.");
+
         for (int i = 0; i < tem; i++) {
             System.arraycopy(key, i * 4, keys[i], 0, 4);
         }

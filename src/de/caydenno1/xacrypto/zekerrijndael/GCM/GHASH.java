@@ -5,6 +5,7 @@ import de.caydenno1.xacrypto.zekerrijndael.UnchangingData;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+
 public class GHASH {
     private final byte[] H;
 
@@ -21,10 +22,11 @@ public class GHASH {
                 cip.length * 8L
         );
         Y = xor(Y, lenBlock);
+
         Y = multi(Y,H);
         return Y;
     }
-    private byte[] proc(byte[]Y, byte[] in) {
+    private byte[] proc(byte[] Y, byte[] in) {
         for (int off = 0; off < in.length; off+=16){
             byte[] bloc = new byte[16];
             int len = Math.min(16, in.length - off);
@@ -42,8 +44,12 @@ public class GHASH {
             int biindex = 7 - (bit%8);
 
             if (((X[byindex] >> biindex) & 1) == 1) Z = xor(Z,V);
+
+            boolean isLSB1 = (V[15] & 1) != 0;
+
             RS(V);
-            if ((V[15] & 1) != 0) V = xor(V,UnchangingData.R);
+
+            if (isLSB1) V = xor(V,UnchangingData.R);
         }
         return Z;
     }
@@ -67,10 +73,7 @@ public class GHASH {
     }
     private byte[] xor(byte[] a, byte[] b){
         byte[] res = new byte[16];
-        for (int i = 0 ; i < 16 ; i++){
-            res[i] = (byte) (a[i] ^ b[i]);
-        }
-
+        for (int i = 0 ; i < 16 ; i++) res[i] = (byte) (a[i] ^ b[i]);
         return res;
     }
 }
