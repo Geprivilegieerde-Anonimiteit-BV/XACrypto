@@ -13,7 +13,7 @@ interface AESCipher {
 
 public class AESGCM implements AESCipher {
     public Result encryptBlock(byte[] pln, byte[] key, byte[] nonce, byte[] aad) throws XACryptoException {
-
+        System.out.println("WARNING! AESGCM may not be fully functional and partially broken. I am unsure if it fully works or not.");
         byte[] zbyte = new byte[16];
         byte[] J0 = new byte[16];
 
