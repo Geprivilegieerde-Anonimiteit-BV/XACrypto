@@ -10,7 +10,7 @@ public class GCM {
     private final BlockCipher cip;
     private final GHASH gh;
 
-    public GCM(BlockCipher cip){
+    public GCM(BlockCipher cip) throws XACryptoException {
         this.cip = cip;
         byte[] H = cip.encryptBlock(new byte[16]);
         this.gh = new GHASH(H);
@@ -49,16 +49,16 @@ public class GCM {
     }
 
     private byte[] dec(Result res, byte[] aad, int ivLen, boolean override) throws XACryptoException {
-        if (res.cip.length < 12) throw new XACryptoException("ciptext min len is 12 char");
+        if (res.cip().length < 12) throw new XACryptoException("ciptext min len is 12 char");
         if (isNull.isNull(aad)) aad = new byte[0];
 
-        byte[] iv = Arrays.copyOfRange(res.cip, 0, 12);
-        byte[] ct = Arrays.copyOfRange(res.cip, 12, res.cip.length);
+        byte[] iv = Arrays.copyOfRange(res.cip(), 0, 12);
+        byte[] ct = Arrays.copyOfRange(res.cip(), 12, res.cip().length);
 
         byte[] J0 = j0(iv);
         byte[] expectedTag = tag(aad, ct, J0);
 
-        boolean corr = ToM.ToM(res.tag, expectedTag);
+        boolean corr = ToM.ToM(res.tag(), expectedTag);
 
         if (!corr && !override) {
             throw new XACryptoException("GCM tag does not match. Use Flag -override to ignore this.",(byte)-1);
@@ -80,13 +80,13 @@ public class GCM {
         }
     }
 
-    private byte[] tag(byte[] aad, byte[] ct, byte[] J0) {
+    private byte[] tag(byte[] aad, byte[] ct, byte[] J0) throws XACryptoException {
         byte[] S   = gh.compute(aad, ct);
         byte[] EJ0 = cip.encryptBlock(J0);
         for (int i = 0; i < 16; i++) S[i] ^= EJ0[i];
         return S;
     }
-    private byte[] gctr(byte[] icb, byte[] in) {
+    private byte[] gctr(byte[] icb, byte[] in) throws XACryptoException {
         byte[] o = new byte[in.length];
         byte[] cnt = Arrays.copyOf(icb, 16);
         for (int i = 0 ; i < in.length ; i += 16){

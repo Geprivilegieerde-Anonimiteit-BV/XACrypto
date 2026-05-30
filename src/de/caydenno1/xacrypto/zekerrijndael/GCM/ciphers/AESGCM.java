@@ -1,12 +1,17 @@
 package de.caydenno1.xacrypto.zekerrijndael.GCM.ciphers;
 import de.caydenno1.xacrypto.misc.XACryptoException;
+import de.caydenno1.xacrypto.zekerrijndael.GCM.BlockCipher;
 import de.caydenno1.xacrypto.zekerrijndael.GCM.GHASH;
 import de.caydenno1.xacrypto.zekerrijndael.GCM.AES;
 import de.caydenno1.xacrypto.zekerrijndael.GCM.Result;
 
 import java.util.Arrays;
 
-public class AESGCM {
+interface AESCipher {
+    Result encryptBlock(byte[] pln, byte[] key, byte[] nonce, byte[] aad) throws XACryptoException;
+}
+
+public class AESGCM implements AESCipher {
     public Result encryptBlock(byte[] pln, byte[] key, byte[] nonce, byte[] aad) throws XACryptoException {
         byte[] zbyte = new byte[16];
         byte[] H = new AES(key, 128).encryptBlock(zbyte);
@@ -23,7 +28,6 @@ public class AESGCM {
         byte[] Tag = xor(TB, S);
 
         return new Result(cip, Tag);
-
     }
 
     private byte[] xor(byte[] a, byte[] b) {
