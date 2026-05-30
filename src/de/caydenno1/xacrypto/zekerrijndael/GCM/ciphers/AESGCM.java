@@ -1,6 +1,5 @@
 package de.caydenno1.xacrypto.zekerrijndael.GCM.ciphers;
 import de.caydenno1.xacrypto.misc.XACryptoException;
-import de.caydenno1.xacrypto.zekerrijndael.GCM.BlockCipher;
 import de.caydenno1.xacrypto.zekerrijndael.GCM.GHASH;
 import de.caydenno1.xacrypto.zekerrijndael.GCM.AES;
 import de.caydenno1.xacrypto.zekerrijndael.GCM.Result;
