@@ -71,7 +71,7 @@ public class GHASH {
 
         return buf.array();
     }
-    private byte[] xor(byte[] a, byte[] b){
+    public byte[] xor(byte[] a, byte[] b){
         byte[] res = new byte[16];
         for (int i = 0 ; i < 16 ; i++) res[i] = (byte) (a[i] ^ b[i]);
         return res;
