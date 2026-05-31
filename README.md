@@ -6,6 +6,20 @@ To be clear, this is **NOT** mean't to be a replacement/alternative to BouncyCas
 
 ## View the "zekerRijndael" branch to see inprogress work.
 
+(i keep confusing myself so here's a todo) TODO:
+### Ensure all ciphers have support for 128,196,256 bit operations.
+### SerpentGCM
+### TwofishGCM
+
+## After the primary GCMs are completed: 
+### ARIA-ECB
+### ARIA-CBC
+### ARIA-CFB
+### ARIA-OFB
+### ARIA-CTR
+### ARIA-CCM
+### ARIA-XTS
+
 Use `setopt interactivecomments` (zsh only) to allow using `#` for comments if you see errors like `zsh: command not found: #`
 
 Ensure Java + javac are installed, on MacOS it can be installed with Homebrew by running `brew install openjdk`
