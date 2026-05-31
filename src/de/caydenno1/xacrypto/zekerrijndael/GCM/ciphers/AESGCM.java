@@ -18,10 +18,12 @@ interface AESCipher {
 public class AESGCM implements AESCipher {
     public Result encryptBlock(byte[] pln, byte[] key, byte[] nonce, byte[] aad) throws XACryptoException {
         System.out.println("WARNING! AESGCM may not be fully functional and partially broken. I am unsure if it fully works or not.");
+        @SuppressWarnings("DuplicatedCode")
         byte[] zbyte = new byte[16];
         byte[] J0 = new byte[16];
 
         AES aes = new AES(key, getKeySize(key));
+        @SuppressWarnings("DuplicatedCode")
         byte[] H = aes.encryptBlock(zbyte);
         GHASH gh = new GHASH(H);
 
@@ -63,7 +65,7 @@ public class AESGCM implements AESCipher {
     private byte[] decBack(byte[] cip, byte[] key, byte[] nonce, byte[] aad, byte[] tag, boolean flag) throws XACryptoException {
         byte[] zbyte = new byte[16];
         byte[] J0 = new byte[16];
-
+        @SuppressWarnings("DuplicatedCode")
         AES aes = new AES(key, getKeySize(key));
         byte[] H = aes.encryptBlock(zbyte);
         GHASH gh = new GHASH(H);
