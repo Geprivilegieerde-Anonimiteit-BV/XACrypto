@@ -1,8 +1,6 @@
 package de.caydenno1.xacrypto.zekerrijndael.GCM.ciphers;
 
 import de.caydenno1.xacrypto.misc.XACryptoException;
-import de.caydenno1.xacrypto.zekerrijndael.GCM.BlockCipher;
-import de.caydenno1.xacrypto.zekerrijndael.GCM.Result;
 import de.caydenno1.xacrypto.zekerrijndael.UnchangingData;
 import de.caydenno1.xacrypto.hash.ROT;
 
@@ -12,16 +10,17 @@ interface CamelliaCipher {
 }
 
 public class Camellia implements CamelliaCipher {
-    private final long[] subkeys = new long[26];
+    private final long[] subkeys;
 
     public Camellia(byte[] key) throws XACryptoException {
-      if (key.length != 16) throw new XACryptoException("16 byte key is required");
-      genKeySchedule(key);
-    };
+        if (key.length != 16 && key.length != 24 && key.length != 32) throw new XACryptoException("16,24,32 byte key is required");
+        this.subkeys = new long[key.length == 16 ? 26 : 34];
+	genKeySchedule(key);
+    }
 
     @Override
     public byte[] encryptBlock(byte[] in, int inputOffset, byte[] out, int outOffset) {
-        long d1 = bytes2Long(in, 0);
+        long d1 = bytes2Long(in, inputOffset);
         long d2 = bytes2Long(in, inputOffset + 8);
 
         d1 ^= subkeys[0];
@@ -54,20 +53,52 @@ public class Camellia implements CamelliaCipher {
         d2 ^= F(d1, subkeys[22]);
         d1 ^= F(d2, subkeys[23]);
 
-        d2 ^= subkeys[24];
-        d1 ^= subkeys[25];
+        if (subkeys.length == 34) {
+            d1 = FL(d1, subkeys[24]);
+            d2 = FLINV(d2, subkeys[25]);
+
+            d2 ^= F(d1, subkeys[26]);
+            d1 ^= F(d2, subkeys[27]);
+            d2 ^= F(d1, subkeys[28]);
+            d1 ^= F(d2, subkeys[29]);
+            d2 ^= F(d1, subkeys[30]);
+            d1 ^= F(d2, subkeys[31]);
+
+            d2 ^= subkeys[32];
+            d1 ^= subkeys[33];
+        } else {
+            d2 ^= subkeys[24];
+            d1 ^= subkeys[25];
+        }
 
         byte[] o = new byte[16];
         long2Bytes(d2, o, outOffset);
-        long2Bytes(d1, o, outOffset+8);
+        long2Bytes(d1, o, outOffset + 8);
         return o;
     }
+
     public byte[] decryptBlock(byte[] in) {
         long d1 = bytes2Long(in, 0);
         long d2 = bytes2Long(in, 8);
 
-        d1 ^= subkeys[24];
-        d2 ^= subkeys[25];
+        if (subkeys.length == 34) {
+            d1 ^= subkeys[32];
+            d2 ^= subkeys[33];
+
+            d2 ^= F(d1, subkeys[31]);
+            d1 ^= F(d2, subkeys[30]);
+            d2 ^= F(d1, subkeys[29]);
+            d1 ^= F(d2, subkeys[28]);
+            d2 ^= F(d1, subkeys[27]);
+            d1 ^= F(d2, subkeys[26]);
+
+            d1 = FL(d1, subkeys[25]);
+            d2 = FLINV(d2, subkeys[24]);
+        } else {
+            d1 ^= subkeys[24];
+            d2 ^= subkeys[25];
+        }
+
         d2 ^= F(d1, subkeys[23]);
         d1 ^= F(d2, subkeys[22]);
         d2 ^= F(d1, subkeys[21]);
@@ -107,9 +138,17 @@ public class Camellia implements CamelliaCipher {
     private void genKeySchedule(byte[] key) {
         long KL1 = bytes2Long(key, 0);
         long KL2 = bytes2Long(key, 8);
-        long KR1,KR2 = 0;
+        long KR1=0,KR2 = 0;
 
-        long d1 = KL1 ^ KR2;
+        if (key.length == 24) {
+            KR1 = bytes2Long(key, 16);
+            KR2 = ~KR1;
+        } else if (key.length == 32) {
+            KR1 = bytes2Long(key, 16);
+            KR2 = bytes2Long(key, 24);
+        }
+
+        long d1 = KL1 ^ KR1;
         long d2 = KL2 ^ KR2;
         d2 ^= F(d1, UnchangingData.CAMELLIA_SIGMA[1]);
         d1 ^= F(d2, UnchangingData.CAMELLIA_SIGMA[2]);
@@ -120,66 +159,133 @@ public class Camellia implements CamelliaCipher {
         long KA1 = d1;
         long KA2 = d2;
 
-        subkeys[0] = KL1;
-        subkeys[1] = KL2;
+        long KB1 = 0, KB2 = 0;
 
-        subkeys[2]  = KA1;
-        subkeys[3]  = KA2;
+        if (key.length > 16) {
+            d1 = KA1 ^ KR1;
+            d2 = KA2 ^ KR2;
+            d2 ^= F(d1, UnchangingData.CAMELLIA_SIGMA[5]);
+            d1 ^= F(d2, UnchangingData.CAMELLIA_SIGMA[6]);
+            KB1 = d1;
+            KB2 = d2;
+        }
 
-        long KLrot15_1 = ROT.ROTL64(KL1, KL2, 15)[0];
-        long KLrot15_2 = ROT.ROTL64(KL1, KL2, 15)[1];
-        subkeys[4] = KLrot15_1;
-        subkeys[5] = KLrot15_2;
+        if (key.length == 16) {
+            subkeys[0] = KL1;
+            subkeys[1] = KL2;
+            subkeys[2] = KA1;
+            subkeys[3] = KA2;
 
-        long KArot15_1 = ROT.ROTL64(KA1, KA2, 15)[0];
-        long KArot15_2 = ROT.ROTL64(KA1, KA2, 15)[1];
-        subkeys[6] = KArot15_1;
-        subkeys[7] = KArot15_2;
+            long[] KLrot15 = ROT.ROTL64(KL1, KL2, 15);
+            subkeys[4] = KLrot15[0];
+            subkeys[5] = KLrot15[1];
 
-        long KArot30_1 = ROT.ROTL64(KA1, KA2, 30)[0];
-        long KArot30_2 = ROT.ROTL64(KA1, KA2, 30)[1];
-        subkeys[8] = (KArot30_1 >>> 32) | (KArot30_1 << 32);
-        subkeys[9]  = (KArot30_2 >>> 32) | (KArot30_2 << 32);
+            long[] KArot15 = ROT.ROTL64(KA1, KA2, 15);
+            subkeys[6] = KArot15[0];
+            subkeys[7] = KArot15[1];
 
-        long KLrot45_1 = ROT.ROTL64(KL1, KL2, 45)[0];
-        long KLrot45_2 = ROT.ROTL64(KL1, KL2, 45)[1];
-        subkeys[10] = KLrot45_1;
-        subkeys[11] = KLrot45_2;
+            long[] KArot30 = ROT.ROTL64(KA1, KA2, 30);
+            subkeys[8] = (KArot30[0] >>> 32) | (KArot30[0] << 32);
+            subkeys[9] = (KArot30[1] >>> 32) | (KArot30[1] << 32);
 
-        long KArot45_1 = ROT.ROTL64(KA1, KA2, 45)[0];
-        long KArot45_2 = ROT.ROTL64(KA1, KA2, 45)[1];
-        subkeys[12] = KArot45_1;
-        subkeys[13] = KArot45_2;
+            long[] KLrot45 = ROT.ROTL64(KL1, KL2, 45);
+            subkeys[10] = KLrot45[0];
+            subkeys[11] = KLrot45[1];
 
-        long KLrot60_1 = ROT.ROTL64(KL1, KL2, 60)[0];
-        long KLrot60_2 = ROT.ROTL64(KL1, KL2, 60)[1];
-        subkeys[14] = KLrot60_1;
-        subkeys[15] = KLrot60_2;
+            long[] KArot45 = ROT.ROTL64(KA1, KA2, 45);
+            subkeys[12] = KArot45[0];
+            subkeys[13] = KArot45[1];
 
-        long KLrot77_1 = ROT.ROTL64(KL1, KL2, 77)[0];
-        long KLrot77_2 = ROT.ROTL64(KL1, KL2, 77)[1];
-        subkeys[16] = (KLrot77_1 >>> 32) | (KLrot77_1 << 32);
-        subkeys[17] = (KLrot77_2 >>> 32) | (KLrot77_2 << 32);
+            long[] KLrot60 = ROT.ROTL64(KL1, KL2, 60);
+            subkeys[14] = KLrot60[0];
+            subkeys[15] = KLrot60[1];
 
-        long KLrot94_1 = ROT.ROTL64(KL1, KL2, 94)[0];
-        long KLrot94_2 = ROT.ROTL64(KL1, KL2, 94)[1];
-        subkeys[18] = KLrot94_1;
-        subkeys[19] = KLrot94_2;
+            long[] KLrot77 = ROT.ROTL64(KL1, KL2, 77);
+            subkeys[16] = (KLrot77[0] >>> 32) | (KLrot77[0] << 32);
+            subkeys[17] = (KLrot77[1] >>> 32) | (KLrot77[1] << 32);
 
-        long KArot94_1 = ROT.ROTL64(KA1, KA2, 94)[0];
-        long KArot94_2 = ROT.ROTL64(KA1, KA2, 94)[1];
-        subkeys[20] = KArot94_1;
-        subkeys[21] = KArot94_2;
+            long[] KLrot94 = ROT.ROTL64(KL1, KL2, 94);
+            subkeys[18] = KLrot94[0];
+            subkeys[19] = KLrot94[1];
 
-        long KLrot111_1 = ROT.ROTL64(KL1, KL2, 111)[0];
-        long KLrot111_2 = ROT.ROTL64(KL1, KL2, 111)[1];
-        subkeys[22] = KLrot111_1;
-        subkeys[23] = KLrot111_2;
+            long[] KArot94 = ROT.ROTL64(KA1, KA2, 94);
+            subkeys[20] = KArot94[0];
+            subkeys[21] = KArot94[1];
 
-        long KArot111_1 = ROT.ROTL64(KA1, KA2, 111)[0];
-        long KArot111_2 = ROT.ROTL64(KA1, KA2, 111)[1];
-        subkeys[24] = KArot111_1;
-        subkeys[25] = KArot111_2;
+            long[] KLrot111 = ROT.ROTL64(KL1, KL2, 111);
+            subkeys[22] = KLrot111[0];
+            subkeys[23] = KLrot111[1];
+
+            long[] KArot111 = ROT.ROTL64(KA1, KA2, 111);
+            subkeys[24] = KArot111[0];
+            subkeys[25] = KArot111[1];
+        } else {
+            subkeys[0] = KL1;
+            subkeys[1] = KL2;
+
+            subkeys[2] = KB1;
+            subkeys[3] = KB2;
+
+            long[] KRrot15 = ROT.ROTL64(KR1, KR2, 15);
+            subkeys[4] = KRrot15[0];
+            subkeys[5] = KRrot15[1];
+
+            long[] KArot15 = ROT.ROTL64(KA1, KA2, 15);
+            subkeys[6] = KArot15[0];
+            subkeys[7] = KArot15[1];
+
+            long[] KRrot30 = ROT.ROTL64(KR1, KR2, 30);
+            subkeys[8] = (KRrot30[0] >>> 32) | (KRrot30[0] << 32);
+            subkeys[9] = (KRrot30[1] >>> 32) | (KRrot30[1] << 32);
+
+            long[] KBrot30 = ROT.ROTL64(KB1, KB2, 30);
+            subkeys[10] = KBrot30[0];
+            subkeys[11] = KBrot30[1];
+
+            long[] KLrot45 = ROT.ROTL64(KL1, KL2, 45);
+            subkeys[12] = KLrot45[0];
+            subkeys[13] = KLrot45[1];
+
+            long[] KArot45 = ROT.ROTL64(KA1, KA2, 45);
+            subkeys[14] = KArot45[0];
+            subkeys[15] = KArot45[1];
+
+            long[] KLrot60 = ROT.ROTL64(KL1, KL2, 60);
+            subkeys[16] = (KLrot60[0] >>> 32) | (KLrot60[0] << 32);
+            subkeys[17] = (KLrot60[1] >>> 32) | (KLrot60[1] << 32);
+
+            long[] KRrot60 = ROT.ROTL64(KR1, KR2, 60);
+            subkeys[18] = KRrot60[0];
+            subkeys[19] = KRrot60[1];
+
+            long[] KBrot60 = ROT.ROTL64(KB1, KB2, 60);
+            subkeys[20] = KBrot60[0];
+            subkeys[21] = KBrot60[1];
+
+            long[] KLrot77 = ROT.ROTL64(KL1, KL2, 77);
+            subkeys[22] = KLrot77[0];
+            subkeys[23] = KLrot77[1];
+
+            long[] KArot77 = ROT.ROTL64(KA1, KA2, 77);
+            subkeys[24] = (KArot77[0] >>> 32) | (KArot77[0] << 32);
+            subkeys[25] = (KArot77[1] >>> 32) | (KArot77[1] << 32);
+
+            long[] KRrot94 = ROT.ROTL64(KR1, KR2, 94);
+            subkeys[26] = KRrot94[0];
+            subkeys[27] = KRrot94[1];
+
+            long[] KArot94 = ROT.ROTL64(KA1, KA2, 94);
+            subkeys[28] = KArot94[0];
+            subkeys[29] = KArot94[1];
+
+            long[] KLrot111 = ROT.ROTL64(KL1, KL2, 111);
+            subkeys[30] = KLrot111[0];
+            subkeys[31] = KLrot111[1];
+
+            long[] KBrot111 = ROT.ROTL64(KB1, KB2, 111);
+            subkeys[32] = KBrot111[0];
+            subkeys[33] = KBrot111[1];
+        }
     }
 
     private long F(long F_IN, long KE) {
@@ -221,7 +327,8 @@ public class Camellia implements CamelliaCipher {
 
         return (y1 << 32) | (y2 & 0xFFFFFFFFL);
     }
-    @SuppressWarnings("UnnecessaryLocalVariable") // <- im expert dev/programmer!
+
+    // <- im expert dev/programmer!
     private long FLINV(long FLINV_IN, long KE) {
         long y1 = FLINV_IN >>> 32;
         long y2 = FLINV_IN & 0xFFFFFFFFL;
@@ -233,6 +340,7 @@ public class Camellia implements CamelliaCipher {
 
         return (x1 << 32) | (x2 & 0xFFFFFFFFL);
     }
+
     private long bytes2Long(byte[] b, int off) {
         long res = 0;
         for (int i = 0; i < 8; i++) {
@@ -241,6 +349,7 @@ public class Camellia implements CamelliaCipher {
         }
         return res;
     }
+
     private void long2Bytes(long v, byte[] b, int off) {
         for (int i = 0; i < 8; i++) {
             b[off + i] = (byte) (v >>> (56 - (i * 8)));
