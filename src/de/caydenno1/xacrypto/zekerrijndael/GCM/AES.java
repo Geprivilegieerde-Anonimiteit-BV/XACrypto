@@ -150,7 +150,7 @@ public final class AES implements BlockCipher {
             System.arraycopy(key, i * 4, keys[i], 0, 4);
         }
 
-        for (int i = 4; i < kc; i++) {
+        for (int i = tem; i < kc; i++) {
 
             byte[] temp = Arrays.copyOf(keys[i - 1], 4);
 

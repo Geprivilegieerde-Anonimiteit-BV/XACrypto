@@ -21,7 +21,7 @@ public class AESGCM implements AESCipher {
         byte[] zbyte = new byte[16];
         byte[] J0 = new byte[16];
 
-        AES aes = new AES(key, 128);
+        AES aes = new AES(key, getKeySize(key));
         byte[] H = aes.encryptBlock(zbyte);
         GHASH gh = new GHASH(H);
 
@@ -50,11 +50,21 @@ public class AESGCM implements AESCipher {
         return decBack(cip, key, nonce, aad, tag, false);
     }
 
+    private static int getKeySize(byte[] key) throws XACryptoException {
+        return switch (key.length) {
+            case 16 -> 128;
+            case 24 -> 192;
+            case 32 -> 256;
+            default -> throw new XACryptoException(
+                    "Invalid AES key length. Expected 16, 24, or 32 bytes."
+            );
+        };
+    }
     private byte[] decBack(byte[] cip, byte[] key, byte[] nonce, byte[] aad, byte[] tag, boolean flag) throws XACryptoException {
         byte[] zbyte = new byte[16];
         byte[] J0 = new byte[16];
 
-        AES aes = new AES(key, 128);
+        AES aes = new AES(key, getKeySize(key));
         byte[] H = aes.encryptBlock(zbyte);
         GHASH gh = new GHASH(H);
 
