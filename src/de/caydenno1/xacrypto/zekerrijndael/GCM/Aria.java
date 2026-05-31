@@ -27,6 +27,17 @@ public class Aria {
         SDK();
     }
 
+    public byte[] encryptBlock(byte[] in) throws XACryptoException{
+        if (in.length != 16) throw new XACryptoException("input length is required to be 16 bytes", (byte)0x16);
+
+        byte[] currentState = new byte[16];
+        System.arraycopy(in, 0, currentState, 0, 16);
+
+        procRound(currentState, this.encRK);
+
+        return currentState;
+    }
+
     private void SDK() {
        System.arraycopy(encRK[0], 0, decRK[round], 0, 16);
        System.arraycopy(encRK[round], 0, decRK[0], 0, 16);
