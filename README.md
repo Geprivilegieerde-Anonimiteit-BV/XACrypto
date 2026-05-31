@@ -3,11 +3,10 @@ To be clear, this is **NOT** mean't to be a replacement/alternative to BouncyCas
 
 ### Current Objective: ZekerRijndael (custom from-scratch AES-128 block cipher)
 ### Note: i'm creating ZekerRijndael as it can be used for creating the following encryption ciphers: AES-CTR; AES-OFB; AES-CFB. Block modes include AES-CBC; AES-ECB. And of course AES-GCM + ASE-CCM
-
+### if i ever say 196-bit, i mean 192-bit my brain is just bugged lol
 ## View the "zekerRijndael" branch to see inprogress work.
 
 (i keep confusing myself so here's a todo) TODO:
-### Ensure all ciphers have support for 128,196,256 bit operations.
 ### SerpentGCM
 ### TwofishGCM
 

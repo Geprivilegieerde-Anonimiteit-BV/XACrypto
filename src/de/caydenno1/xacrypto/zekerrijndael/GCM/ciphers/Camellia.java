@@ -15,7 +15,7 @@ public class Camellia implements CamelliaCipher {
     public Camellia(byte[] key) throws XACryptoException {
         if (key.length != 16 && key.length != 24 && key.length != 32) throw new XACryptoException("16,24,32 byte key is required");
         this.subkeys = new long[key.length == 16 ? 26 : 34];
-	genKeySchedule(key);
+	    genKeySchedule(key);
     }
 
     @Override
