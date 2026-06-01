@@ -7,16 +7,12 @@ To be clear, this is **NOT** mean't to be a replacement/alternative to BouncyCas
 ## View the "zekerRijndael" branch to see inprogress work.
 
 (i keep confusing myself so here's a todo) TODO:
-### TwofishGCM
-
-## After the primary GCMs are completed: 
+### BLOWFISH-ECB
+### BLOWFISH-CBC
 ### ARIA-ECB
 ### ARIA-CBC
 ### ARIA-CFB
 ### ARIA-OFB
-### ARIA-CTR
-### ARIA-CCM
-### ARIA-XTS
 
 Use `setopt interactivecomments` (zsh only) to allow using `#` for comments if you see errors like `zsh: command not found: #`
 

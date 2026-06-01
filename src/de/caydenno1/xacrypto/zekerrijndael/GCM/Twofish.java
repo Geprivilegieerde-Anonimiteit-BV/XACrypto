@@ -1,6 +1,7 @@
 package de.caydenno1.xacrypto.zekerrijndael.GCM;
 
 import de.caydenno1.xacrypto.misc.XACryptoException;
+import de.caydenno1.xacrypto.zekerrijndael.UnchangingData;
 
 import static de.caydenno1.xacrypto.zekerrijndael.UnchangingData.TWOFISH_Q0;
 import static de.caydenno1.xacrypto.zekerrijndael.UnchangingData.TWOFISH_Q1;
@@ -45,8 +46,67 @@ public class Twofish {
             K[2 * i + 1] = Integer.rotateLeft(A + 2 * B, 9);
         }
     }
-    private int h(int x, int[] L, int k) { return -1; }
-    public byte[] encryptBlock(byte[] in) throws XACryptoException { return new byte[1]; }
+    private int h(int x, int[] L, int k) {
+        int[] B = new int[4];
+        for (int i = 0 ; i < 4 ; i++) B[i] = (int) ((x >>> (8 * i)) & 0xFF);
+
+        if (k == 4) {
+            for (int i = 0; i < 4; i++) {
+                byte[] q = (i == 0 || i == 3) ? TWOFISH_Q1 : TWOFISH_Q0;
+                B[i] = (q[B[i]] & 0xFF) ^ ((L[3] >>> (8 * i)) & 0xFF);
+            }
+        }
+        if (k >= 3) {
+            for (int i = 0; i < 4; i++) {
+                byte[] q = (i < 2) ? TWOFISH_Q1 : TWOFISH_Q0;
+                B[i] = (q[B[i]] & 0xFF) ^ ((L[2] >>> (8 * i)) & 0xFF);
+            }
+        }
+
+        B[0] = (TWOFISH_Q1[ (TWOFISH_Q0[ (TWOFISH_Q0[B[0]] & 0xFF) ^ (L[1] & 0xFF) ] & 0xFF) ^ (L[0] & 0xFF) ] & 0xFF);
+        B[1] = (TWOFISH_Q0[ (TWOFISH_Q0[ (TWOFISH_Q1[B[1]] & 0xFF) ^ ((L[1] >>> 8) & 0xFF) ] & 0xFF) ^ ((L[0] >>> 8) & 0xFF) ] & 0xFF);
+        B[2] = (TWOFISH_Q1[ (TWOFISH_Q1[ (TWOFISH_Q0[B[2]] & 0xFF) ^ ((L[1] >>> 16) & 0xFF) ] & 0xFF) ^ ((L[0] >>> 16) & 0xFF) ] & 0xFF);
+        B[3] = (TWOFISH_Q0[ (TWOFISH_Q1[ (TWOFISH_Q1[B[3]] & 0xFF) ^ ((L[1] >>> 24) & 0xFF) ] & 0xFF) ^ ((L[0] >>> 24) & 0xFF) ] & 0xFF);
+        
+        int[] Z = new int[4];
+        Z[0] = gfMultMDS(0x01, B[0]) ^ gfMultMDS(0xEF, B[1]) ^ gfMultMDS(0x5B, B[2]) ^ gfMultMDS(0x5B, B[3]);
+        Z[1] = gfMultMDS(0x5B, B[0]) ^ gfMultMDS(0xEF, B[1]) ^ gfMultMDS(0xEF, B[2]) ^ gfMultMDS(0x01, B[3]);
+        Z[2] = gfMultMDS(0xEF, B[0]) ^ gfMultMDS(0x5B, B[1]) ^ gfMultMDS(0x01, B[2]) ^ gfMultMDS(0xEF, B[3]);
+        Z[3] = gfMultMDS(0xEF, B[0]) ^ gfMultMDS(0x01, B[1]) ^ gfMultMDS(0xEF, B[2]) ^ gfMultMDS(0x5B, B[3]);
+
+        return Z[0] | (Z[1] << 8) | (Z[2] << 16) | (Z[3] << 24);
+    }
+
+    public byte[] encryptBlock(byte[] in) throws XACryptoException {
+        if (in.length != 16) throw new XACryptoException("twofish's minimum block size is 16 bytes :(", (int)16);
+        int[] X = new int[4];
+        for (int i = 0; i < 4; i++) {
+            X[i] = read32LE(in, i * 4) ^ K[i];
+        }
+
+        for (int r = 0 ; r < 16 ; r += 2) {
+            int t0 = h(X[0], S, kW);
+            int t1 = h(Integer.rotateLeft(X[1], 8), S, kW);
+            int f0 = t0 + t1 + K[2 * r + 8];
+            int f1 = t0 + 2 * t1 + K[2 * r + 9];
+            X[2] = Integer.rotateRight(X[2] ^ f0, 1);
+            X[3] = Integer.rotateLeft(X[2], 1) ^ f1;
+
+            t0 = h(X[2], S, kW);
+            t1 = h(Integer.rotateLeft(X[3], 8), S, kW);
+            f0 = t0 + t1 + K[2 * r + 10];
+            f1 = t0 + 2 * t1 + K[2 * r + 11];
+            X[0] = Integer.rotateRight(X[0] ^ f0, 1);
+            X[1] = Integer.rotateLeft(X[1], 1) ^ f1;
+        }
+
+        byte[] o = new byte[16];
+        write32LE(X[2] ^ K[4], o, 0);
+        write32LE(X[3] ^ K[5], o, 4);
+        write32LE(X[0] ^ K[6], o, 8);
+        write32LE(X[1] ^ K[7], o, 12);
+        return o;
+    }
     private static int read32LE(byte[] b, int off) { return (b[off] & 0xFF) | ((b[off + 1] & 0xFF) << 8) | ((b[off + 2] & 0xFF) << 16) | ((b[off + 3] & 0xFF) << 24); }
     private static void write32LE(int v, byte[] b, int off) { for (int i = 0 ; i < 4 ; i++) b[off + i] = (byte) (v >>> (i * 8)); };
     private static int gfMultMDS(int a, int b) {
