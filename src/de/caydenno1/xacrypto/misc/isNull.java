@@ -9,4 +9,14 @@ public class isNull {
     public boolean isNull(Object v, Object alt) {
         return Objects.isNull(v) || v == null || v == alt;
     }
+    public static boolean isValidText(String s) {
+        if (s.isBlank() || s.trim().isEmpty()) return false;
+        switch (s) {
+            case "":
+            case null:
+                return false;
+            default:
+                return true;
+        }
+    };
 }
