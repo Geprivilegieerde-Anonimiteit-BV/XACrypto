@@ -75,12 +75,68 @@ public class Serpent implements SerpentCipher {
 
         for (int i = 0 ; i < 33 ; i++) {
             int[] group = { w[8 + 4 * i], w[8 + 4 * i + 1], w[8 + 4 * i + 2], w[8 + 4 * i + 3] };
+
+            int index = (3 - i) % 8;
+
+            SBOXify(index, group, SERPENT_SBOX);
+
+            byte[] kb = new byte[16];
+            for (int j = 0 ; j < 4 ; j++) for (int k = 0; k < 4; k++) kb[j * 4 + k] = (byte) (group[j] >>> (k * 8));
+
+            pack(kb, K[i]);
         }
-        // more here
     }
-    private void SBOXify(int box, int[] X, byte[][] table) {}
-    private void LT(int[] X) {}
-    private void invLT(int[] X) {}
-    private void pack(byte[] src, int[] dest) {}
-    private void unpack(int[] src, byte[] dest) {}
+    private void SBOXify(int box, int[] X, byte[][] table) {
+        int[] Y = new int[4];
+        byte[] sbox = table[box];
+        for (int i = 0 ; i < 32 ; i++) {
+            int nibble = ((X[0] >>> i) & 1) | (((X[1] >>> i) & 1) << 1) |
+                    (((X[2] >>> i) & 1) << 2) | (((X[3] >>> i) & 1) << 3);
+            int out = sbox[nibble];
+            Y[0] |= (out & 1) << i;
+            Y[1] |= ((out >>> 1) & 1) << i;
+            Y[2] |= ((out >>> 2) & 1) << i;
+            Y[3] |= ((out >>> 3) & 1) << i;
+        }
+        for (int i = 0 ; i < 4 ; i++) X[i] = Y[i];
+    }
+
+    private void LT(int[] X) {
+        X[0] = Integer.rotateLeft(X[0], 13);
+        X[2] = Integer.rotateLeft(X[2], 3);
+        X[1] ^= X[0] ^ X[2];
+        X[3] ^= X[2] ^ (X[0] << 3);
+        X[1] = Integer.rotateLeft(X[1], 1);
+        X[3] = Integer.rotateLeft(X[3], 7);
+        X[0] ^= X[1] ^ X[3];
+        X[2] ^= X[3] ^ (X[1] << 7);
+        X[0] = Integer.rotateLeft(X[0], 5);
+        X[2] = Integer.rotateLeft(X[2], 22);
+
+    }
+    private void invLT(int[] X) {
+        X[2] = Integer.rotateRight(X[2], 22);
+        X[0] = Integer.rotateRight(X[0], 5);
+        X[2] ^= X[3] ^ (X[1] << 7);
+        X[0] ^= X[1] ^ X[3];
+        X[3] = Integer.rotateRight(X[3], 7);
+        X[1] = Integer.rotateRight(X[1], 1);
+        X[3] ^= X[2] ^ (X[0] << 3);
+        X[1] ^= X[0] ^ X[2];
+        X[2] = Integer.rotateRight(X[2], 3);
+        X[0] = Integer.rotateRight(X[0], 13);
+    }
+    private void pack(byte[] src, int[] dest) {
+        dest[0] = dest[1] = dest[2] = dest[3] = 0;
+        for (int i = 0 ; i < 128 ; i++) {
+            int b = (src[i / 8] >>> (i % 8)) & 1;
+            dest[i % 4] |= (b << (i / 4));
+        }
+    }
+    private void unpack(int[] src, byte[] dest) {
+        for (int i = 0 ; i < 128 ; i++) {
+            int b = (src[i % 4] >>> (i / 4)) & 1;
+            dest[i / 8] |= (b << (i % 8));
+        }
+    }
 }

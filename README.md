@@ -7,7 +7,6 @@ To be clear, this is **NOT** mean't to be a replacement/alternative to BouncyCas
 ## View the "zekerRijndael" branch to see inprogress work.
 
 (i keep confusing myself so here's a todo) TODO:
-### SerpentGCM
 ### TwofishGCM
 
 ## After the primary GCMs are completed: 
