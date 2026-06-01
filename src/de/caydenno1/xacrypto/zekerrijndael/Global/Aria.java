@@ -1,4 +1,4 @@
-package de.caydenno1.xacrypto.zekerrijndael.GCM;
+package de.caydenno1.xacrypto.zekerrijndael.Global;
 
 import de.caydenno1.xacrypto.misc.XACryptoException;
 import de.caydenno1.xacrypto.zekerrijndael.UnchangingData;
@@ -36,6 +36,17 @@ public class Aria {
         procRound(currentState, this.encRK);
 
         return currentState;
+    }
+
+    public byte[] decryptBlock(byte[] in) throws XACryptoException {
+        if (in.length != 16) throw new XACryptoException("input length is required to be 16 bytes", (byte)0x16);
+
+        byte[] state = new byte[16];
+        System.arraycopy(in,0,state,0,16);
+
+        procRound(state, this.decRK);
+
+        return state;
     }
 
     private void SDK() {
