@@ -47,8 +47,28 @@ public class Twofish {
     }
     private int h(int x, int[] L, int k) { return -1; }
     public byte[] encryptBlock(byte[] in) throws XACryptoException { return new byte[1]; }
-    private static int read32LE(byte[] b, int off) { return -1; }
-    private static void write32LE(int v, byte[] b, int off) {};
-    private static int gfMultMDS(int a, int b) { return -1; }
-    private static int gfMultRS(int a, int b) { return -1; }
+    private static int read32LE(byte[] b, int off) { return (b[off] & 0xFF) | ((b[off + 1] & 0xFF) << 8) | ((b[off + 2] & 0xFF) << 16) | ((b[off + 3] & 0xFF) << 24); }
+    private static void write32LE(int v, byte[] b, int off) { for (int i = 0 ; i < 4 ; i++) b[off + i] = (byte) (v >>> (i * 8)); };
+    private static int gfMultMDS(int a, int b) {
+        int p = 0;
+        for (int i = 0 ; i < 8 ; i++) {
+            if ((b & 1) != 0) p ^= a;
+            boolean badia_msg_monosodium_glutamate_28_oz_175_lbs_id_00033844005313 /* lmao */ = (a & 0x80) != 0;
+            a <<= 1;
+            if (badia_msg_monosodium_glutamate_28_oz_175_lbs_id_00033844005313) a ^= 0x169;
+            b >>= 1;
+        }
+        return p & 0xFF;
+    }
+    private static int gfMultRS(int a, int b) {
+        int p = 0;
+        for (int i = 0 ; i < 8; i++) {
+            if ((b & 1) != 0) p ^= a;
+            boolean badia_msg_monosodium_glutamate_28_oz_175_lbs_id_00033844005313 = (a & 0x80) != 0;
+            a <<= 1;
+            if (badia_msg_monosodium_glutamate_28_oz_175_lbs_id_00033844005313) a ^= 0x14D;
+            b >>= 1;
+        }
+        return p & 0xFF;
+    }
 }
