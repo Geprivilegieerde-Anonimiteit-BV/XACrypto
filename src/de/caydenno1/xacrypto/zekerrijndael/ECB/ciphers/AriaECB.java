@@ -3,7 +3,12 @@ package de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers;
 import de.caydenno1.xacrypto.misc.XACryptoException;
 import de.caydenno1.xacrypto.zekerrijndael.Global.Aria;
 
-public class AriaECB {
+interface AriaCipher {
+    public byte[] encrypt(byte[] pln) throws XACryptoException;
+    public byte[] decrypt(byte[] cip) throws XACryptoException;
+}
+
+public class AriaECB implements AriaCipher {
     private final Aria engine;
 
     public AriaECB(byte[] key) throws XACryptoException {
