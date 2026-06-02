@@ -4,8 +4,12 @@ out/
 !**/src/test/**/out/
 .kotlin
 XACrypto.jar
+<<<<<<< HEAD
 tests
 .idea/
+=======
+.idea
+>>>>>>> main
 
 ### Eclipse ###
 .apt_generated
@@ -31,3 +35,6 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### Maven ###
+target/
