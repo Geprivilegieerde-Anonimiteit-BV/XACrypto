@@ -1,6 +1,8 @@
 package de.caydenno1.xacrypto.zekerrijndael;
 
 import de.caydenno1.xacrypto.misc.XACryptoException;
+import de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.AriaECB;
+import de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.BlowfishECB;
 import de.caydenno1.xacrypto.zekerrijndael.GCM.AES;
 import de.caydenno1.xacrypto.zekerrijndael.GCM.BlockCipher;
 import de.caydenno1.xacrypto.zekerrijndael.GCM.GCM;
@@ -14,4 +16,6 @@ public class Factories {
     public static GCM AESGCM(byte[] key) throws XACryptoException, InvocationTargetException, NoSuchMethodException, IllegalAccessException { return new GCM(new AESGCM());}
     public static ARIAGCM ARIAGCM(byte[] key) throws XACryptoException, InvocationTargetException, NoSuchMethodException, IllegalAccessException { return new ARIAGCM(key); }
     public static GCM SerpentGCM(byte[] key) throws XACryptoException, InvocationTargetException, NoSuchMethodException, IllegalAccessException { return new SerpentGCM(key); }
+    public static BlowfishECB BlowfishECB(byte[] key) throws XACryptoException { return new BlowfishECB(key); }
+    public static AriaECB AriaECB(byte[] key) throws XACryptoException { return new AriaECB(key); }
 }
