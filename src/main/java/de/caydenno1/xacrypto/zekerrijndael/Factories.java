@@ -10,9 +10,7 @@ import de.caydenno1.xacrypto.zekerrijndael.GCM.ciphers.*;
 import java.lang.reflect.InvocationTargetException;
 
 public class Factories {
-
     public static class GCM {
-
         public static de.caydenno1.xacrypto.zekerrijndael.GCM.GCM AES128(byte[] key) throws XACryptoException, InvocationTargetException, NoSuchMethodException, IllegalAccessException { return new de.caydenno1.xacrypto.zekerrijndael.GCM.GCM(new AES(key, 128)); }
 
         public static de.caydenno1.xacrypto.zekerrijndael.GCM.GCM SM4GCM(byte[] key) throws XACryptoException, InvocationTargetException, NoSuchMethodException, IllegalAccessException { return new de.caydenno1.xacrypto.zekerrijndael.GCM.GCM(new SM4GCM(key)); }
@@ -20,10 +18,13 @@ public class Factories {
         public static de.caydenno1.xacrypto.zekerrijndael.GCM.GCM Camellia(byte[] key) throws XACryptoException, InvocationTargetException, NoSuchMethodException, IllegalAccessException { return new de.caydenno1.xacrypto.zekerrijndael.GCM.GCM(new Camellia(key)); }
 
         public static de.caydenno1.xacrypto.zekerrijndael.GCM.GCM AESGCM() throws XACryptoException, InvocationTargetException, NoSuchMethodException, IllegalAccessException { return new de.caydenno1.xacrypto.zekerrijndael.GCM.GCM(new AESGCM()); }
+
+        public static de.caydenno1.xacrypto.zekerrijndael.GCM.GCM ARIAGCM(byte[] key) throws XACryptoException, InvocationTargetException, NoSuchMethodException, IllegalAccessException { return new de.caydenno1.xacrypto.zekerrijndael.GCM.GCM(new ARIAGCM(key)); }
+
+        public static de.caydenno1.xacrypto.zekerrijndael.GCM.GCM SerpentGCM(byte[] key) throws XACryptoException, InvocationTargetException, NoSuchMethodException, IllegalAccessException { return new de.caydenno1.xacrypto.zekerrijndael.GCM.GCM(new SerpentGCM(key)); }
     }
 
     public static class ECB {
-
         public static de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.interfaces.ECBExceptionless Blowfish(byte[] key) throws XACryptoException { return new BlowfishECB(key); }
 
         public static de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.interfaces.ECB Aria(byte[] key) throws XACryptoException { return new AriaECB(key); }
