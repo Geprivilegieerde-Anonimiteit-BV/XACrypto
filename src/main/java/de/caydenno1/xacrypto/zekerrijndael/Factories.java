@@ -1,6 +1,7 @@
 package de.caydenno1.xacrypto.zekerrijndael;
 
 import de.caydenno1.xacrypto.misc.XACryptoException;
+import de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.AESECB;
 import de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.AriaECB;
 import de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.BlowfishECB;
 import de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.SM4ECB;
@@ -19,4 +20,5 @@ public class Factories {
     public static BlowfishECB BlowfishECB(byte[] key) throws XACryptoException { return new BlowfishECB(key); }
     public static AriaECB AriaECB(byte[] key) throws XACryptoException { return new AriaECB(key); }
     public static SM4ECB SM4ECB(byte[] key) throws XACryptoException { return new SM4ECB(key); }
+    public static AESECB AESECB(byte[] key) throws XACryptoException { return new AESECB(key); }
 }
