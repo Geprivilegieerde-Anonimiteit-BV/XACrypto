@@ -1,9 +1,10 @@
 package de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers;
 
 import de.caydenno1.xacrypto.misc.XACryptoException;
+import de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.interfaces.ECB;
 import de.caydenno1.xacrypto.zekerrijndael.GCM.AES;
 
-public class AESECB {
+public class AESECB implements ECB {
     private final AES engine;
 
     public AESECB(byte[] key) throws XACryptoException {

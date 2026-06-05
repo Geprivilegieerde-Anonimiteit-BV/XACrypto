@@ -1,6 +1,7 @@
-package de.caydenno1.xacrypto.zekerrijndael.GCM;
+package de.caydenno1.xacrypto.zekerrijndael.Global;
 
 import de.caydenno1.xacrypto.misc.XACryptoException;
+import de.caydenno1.xacrypto.zekerrijndael.GCM.BlockCipher;
 
 import static de.caydenno1.xacrypto.zekerrijndael.UnchangingData.SERPENT_SBOX;
 import static de.caydenno1.xacrypto.zekerrijndael.UnchangingData.SERPENT_IBOX;

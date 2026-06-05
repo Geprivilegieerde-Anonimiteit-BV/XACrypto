@@ -5,6 +5,8 @@ import de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.AESECB;
 import de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.AriaECB;
 import de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.BlowfishECB;
 import de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.SM4ECB;
+import de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.interfaces.ECB;
+import de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.interfaces.ECBExceptionless;
 import de.caydenno1.xacrypto.zekerrijndael.GCM.AES;
 import de.caydenno1.xacrypto.zekerrijndael.GCM.GCM;
 import de.caydenno1.xacrypto.zekerrijndael.GCM.ciphers.*;
@@ -17,8 +19,8 @@ public class Factories {
     public static GCM AESGCM(byte[] key) throws XACryptoException, InvocationTargetException, NoSuchMethodException, IllegalAccessException { return new GCM(new AESGCM());}
     public static ARIAGCM ARIAGCM(byte[] key) throws XACryptoException, InvocationTargetException, NoSuchMethodException, IllegalAccessException { return new ARIAGCM(key); }
     public static GCM SerpentGCM(byte[] key) throws XACryptoException, InvocationTargetException, NoSuchMethodException, IllegalAccessException { return new SerpentGCM(key); }
-    public static BlowfishECB BlowfishECB(byte[] key) throws XACryptoException { return new BlowfishECB(key); }
-    public static AriaECB AriaECB(byte[] key) throws XACryptoException { return new AriaECB(key); }
-    public static SM4ECB SM4ECB(byte[] key) throws XACryptoException { return new SM4ECB(key); }
-    public static AESECB AESECB(byte[] key) throws XACryptoException { return new AESECB(key); }
+    public static ECBExceptionless BlowfishECB(byte[] key) throws XACryptoException { return new BlowfishECB(key); }
+    public static ECB AriaECB(byte[] key) throws XACryptoException { return new AriaECB(key); }
+    public static ECBExceptionless SM4ECB(byte[] key) throws XACryptoException { return new SM4ECB(key); }
+    public static ECB AESECB(byte[] key) throws XACryptoException { return new AESECB(key); }
 }
