@@ -1,10 +1,7 @@
 package de.caydenno1.xacrypto.zekerrijndael;
 
 import de.caydenno1.xacrypto.misc.XACryptoException;
-import de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.AESECB;
-import de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.AriaECB;
-import de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.BlowfishECB;
-import de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.SM4ECB;
+import de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.*;
 import de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.interfaces.ECB;
 import de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.interfaces.ECBExceptionless;
 import de.caydenno1.xacrypto.zekerrijndael.GCM.AES;
@@ -23,4 +20,5 @@ public class Factories {
     public static ECB AriaECB(byte[] key) throws XACryptoException { return new AriaECB(key); }
     public static ECBExceptionless SM4ECB(byte[] key) throws XACryptoException { return new SM4ECB(key); }
     public static ECB AESECB(byte[] key) throws XACryptoException { return new AESECB(key); }
+    public static ECB TwofishECB(byte[] key) throws XACryptoException { return new TwofishECB(key); }
 }
