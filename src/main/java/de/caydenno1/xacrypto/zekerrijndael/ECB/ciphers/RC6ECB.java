@@ -75,7 +75,27 @@ public class RC6ECB implements ECB {
         for (int i = 0; i < 4; i++) write32LE(data[i], out, outOff + (i * 4));
     }
 
-    public byte[] encrypt(byte[] pln) throws XACryptoException { return new byte[16]; }
+    public byte[] encrypt(byte[] pln) throws XACryptoException {
+        int pLen = 16 - (pln.length % 16);
+        byte[] pData = new byte[pln.length + pLen];
+        System.arraycopy(pln, 0, pData, 0, pln.length);
+        for (int i = pln.length ; i < pData.length ; i++) pData[i] = (byte) pLen;
 
-    public byte[] decrypt(byte[] cip) throws XACryptoException { return new byte[16]; }
+        byte[] cip = new byte[pData.length];
+        for (int i = 0 ; i < pData.length ; i += 16) encryptBlock(pData, i, cip, i);
+        return cip;
+    }
+
+    public byte[] decrypt(byte[] cip) throws XACryptoException {
+        if (cip.length % 16 != 0) throw new XACryptoException("ciptext length is not a multiple of 16");
+
+        byte[] de = new byte[cip.length];
+        for (int i = 0 ; i < cip.length ; i += 16) decryptBlock(cip, i, de, i);
+
+        int pLen = de[de.length - 1] & 0xFF;
+
+        byte[] pln = new byte[de.length - pLen];
+        System.arraycopy(de, 0, pln, 0, pln.length);
+        return pln;
+    }
 }

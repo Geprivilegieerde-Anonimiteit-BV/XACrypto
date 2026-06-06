@@ -34,5 +34,7 @@ public class Factories {
         public static de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.interfaces.ECB AES(byte[] key) throws XACryptoException { return new AESECB(key); }
 
         public static de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.interfaces.ECB Twofish(byte[] key) throws XACryptoException { return new TwofishECB(key); }
+
+        public static de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.interfaces.ECB RC6ECB(byte[] key) throws XACryptoException { return new RC6ECB(key); }
     }
 }
