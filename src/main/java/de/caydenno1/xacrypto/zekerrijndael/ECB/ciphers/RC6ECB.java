@@ -30,13 +30,52 @@ public class RC6ECB implements ECB {
         }
     }
 
-    private void encryptBlock(byte[] in, int inOff, byte[] out, int outOff) {};
+    private void encryptBlock(byte[] in, int inOff, byte[] out, int outOff) {
+        int[] data = new int[4];
+        for (int i = 0; i < 4; i++) data[i] = read32LE(in, inOff + (i * 4));
 
-    private void decryptBlock(byte[] in, int inOff, byte[] out, int outOff) {};
+        data[1] += S[0];
+        data[3] += S[1];
+
+        for (int i = 1 ; i <= 20 ; i++) {
+            int t = Integer.rotateLeft(data[1] * (2 * data[1] + 1), 5);
+            int u = Integer.rotateLeft(data[3] * (2 * data[3] + 1), 5);
+
+            data[0] = Integer.rotateLeft(data[0] ^ t, u) + S[2 * i];
+            data[2] = Integer.rotateLeft(data[2] ^ u, t) + S[2 * i + 1];
+
+            int _0 = data[0]; data[0] = data[1]; data[1] = data[2]; data[2] = data[3]; data[3] = _0;
+        }
+
+        data[0] += S[42];
+        data[2] += S[43];
+
+        for (int i = 0; i < 4; i++) write32LE(data[i], out, outOff + (i * 4));
+    };
+
+    private void decryptBlock(byte[] in, int inOff, byte[] out, int outOff) {
+        int[] data = new int[4];
+        for (int i = 0; i < 4; i++) data[i] = read32LE(in, inOff + (i * 4));
+
+        data[2] -= S[43];
+        data[0] -= S[42];
+
+        for (int i = 20 ; i >= 1 ; i--) {
+            int _0 = data[3]; data[2] = data[1]; data[1] = data[0]; data[0] = _0;
+
+            int u = Integer.rotateLeft(data[3] * (2 * data[3] + 1), 5);
+            int t = Integer.rotateLeft(data[1] * (2 * data[1] + 1), 5);
+
+            data[2] = Integer.rotateRight(data[2] - S[2 * i + 1], t) ^ u;
+            data[0] = Integer.rotateRight(data[0] - S[2 * i], u) ^ t;
+        }
+
+        data[3] -= S[1];
+        data[1] -= S[0];
+        for (int i = 0; i < 4; i++) write32LE(data[i], out, outOff + (i * 4));
+    }
 
     public byte[] encrypt(byte[] pln) throws XACryptoException { return new byte[16]; }
 
     public byte[] decrypt(byte[] cip) throws XACryptoException { return new byte[16]; }
-
-
 }
