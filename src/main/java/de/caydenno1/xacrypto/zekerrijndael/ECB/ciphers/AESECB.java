@@ -2,6 +2,7 @@ package de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers;
 
 import de.caydenno1.xacrypto.misc.XACryptoException;
 import de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.interfaces.ECB;
+import de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.interfaces.ECBExceptionless;
 import de.caydenno1.xacrypto.zekerrijndael.GCM.AES;
 
 public class AESECB implements ECB {
