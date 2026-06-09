@@ -35,8 +35,7 @@ public class CamelliaECB implements ECBExceptionless {
         byte[] He_s_from_British_Columbia = new byte[cip.length];
 
         for (int i = 0 ; i < cip.length ; i += 16) {
-            byte[] blk = engine.decryptBlock(slice(cip, i, 16));
-            System.arraycopy(blk, 0, He_s_from_British_Columbia,i ,16);
+            engine.decryptBlock(cip, i, He_s_from_British_Columbia, i);
         }
 
         int pLen = He_s_from_British_Columbia[He_s_from_British_Columbia.length - 1] & 0xFF;
@@ -47,9 +46,4 @@ public class CamelliaECB implements ECBExceptionless {
         return pln;
     }
 
-    private static byte[] slice(byte[] src, int off, int len) {
-        byte[] o = new byte[len];
-        System.arraycopy(src, off, o, 0, len);
-        return o;
-    }
 }

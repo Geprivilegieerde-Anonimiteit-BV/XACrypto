@@ -82,8 +82,12 @@ public class Camellia implements CamelliaCipher {
     }
 
     public byte[] decryptBlock(byte[] in) {
-        long d1 = bytes2Long(in, 0);
-        long d2 = bytes2Long(in, 8);
+        return decryptBlock(in, 0, new byte[16], 0);
+    }
+
+    public byte[] decryptBlock(byte[] in, int inputOffset, byte[] out, int outOffset) {
+        long d1 = bytes2Long(in, inputOffset);
+        long d2 = bytes2Long(in, inputOffset + 8);
 
         if (subkeys.length == 34) {
             d1 ^= subkeys[32];
@@ -133,10 +137,9 @@ public class Camellia implements CamelliaCipher {
         d2 ^= subkeys[0];
         d1 ^= subkeys[1];
 
-        byte[] o = new byte[16];
-        long2Bytes(d2, o, 0);
-        long2Bytes(d1, o, 8);
-        return o;
+        long2Bytes(d2, out, outOffset);
+        long2Bytes(d1, out, outOffset + 8);
+        return out;
     }
 
     private void genKeySchedule(byte[] key) {
