@@ -1,4 +1,4 @@
-package de.caydenno1.xacrypto.zekerrijndael.GCM.ciphers;
+package de.caydenno1.xacrypto.zekerrijndael.Global;
 
 import de.caydenno1.xacrypto.misc.XACryptoException;
 import de.caydenno1.xacrypto.zekerrijndael.UnchangingData;
@@ -16,6 +16,10 @@ public class Camellia implements CamelliaCipher {
         if (key.length != 16 && key.length != 24 && key.length != 32) throw new XACryptoException("16,24,32 byte key is required");
         this.subkeys = new long[key.length == 16 ? 26 : 34];
 	    genKeySchedule(key);
+    }
+
+    public byte[] encryptBlock(byte[] in) {
+        return encryptBlock(in, 0, new byte[16], 0);
     }
 
     @Override

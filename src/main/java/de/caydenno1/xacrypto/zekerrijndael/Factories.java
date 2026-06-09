@@ -7,6 +7,7 @@ import de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.interfaces.ECBExceptionle
 import de.caydenno1.xacrypto.zekerrijndael.GCM.AES;
 import de.caydenno1.xacrypto.zekerrijndael.GCM.GCM;
 import de.caydenno1.xacrypto.zekerrijndael.GCM.ciphers.*;
+import de.caydenno1.xacrypto.zekerrijndael.Global.Camellia;
 import java.lang.reflect.InvocationTargetException;
 
 public class Factories {
@@ -36,5 +37,7 @@ public class Factories {
         public static de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.interfaces.ECB Twofish(byte[] key) throws XACryptoException { return new TwofishECB(key); }
 
         public static de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.interfaces.ECB RC6ECB(byte[] key) throws XACryptoException { return new RC6ECB(key); }
+
+        //public static de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.interfaces.ECBExceptionless CamelliaECB(byte[] key) throws XACryptoException { return new CamelliaECB(key); }
     }
 }
