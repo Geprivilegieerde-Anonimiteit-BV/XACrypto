@@ -53,33 +53,29 @@ public class Aria {
        System.arraycopy(encRK[0], 0, decRK[round], 0, 16);
        System.arraycopy(encRK[round], 0, decRK[0], 0, 16);
 
-       byte[] _0 = new byte[16];
        for (int i = 1 ; i < round ; i++){
-           A(encRK[i], _0);
-           System.arraycopy(_0, 0, decRK[round-i], 0, 16);
+           A(encRK[i], decRK[round - i]);
        }
     }
     private void procRound(byte[] state, byte[][] rK){
-        byte[] _0 = new byte[16];
-
         for (int r = 0 ; r < round - 1 ; r++){
             AriaXOR(state,rK[r]);
             if (r % 2 == 0) {
-                SL1(state, _0);
+                SL1(state, state);
             } else {
-                SL2(state, _0);
+                SL2(state, state);
             }
-            A(_0, state);
+            A(state, state);
         }
 
         AriaXOR(state, rK[round-1]);
         if((round-1) % 2 == 0) {
-            SL1(state, _0);
+            SL1(state, state);
         } else {
-            SL2(state, _0);
+            SL2(state, state);
         }
 
-        AriaXOR(_0, rK[round], state);
+        AriaXOR(state, rK[round], state);
     }
 
     private void AriaXOR(byte[] blk, byte[] key){
@@ -110,17 +106,15 @@ public class Aria {
     }
     // feistel odd
     private void FO(byte[] i, byte[] ck, byte[] o) {
-        byte[] _0 = new byte[16];
-        AriaXOR(i, ck, _0);
-        SL1(_0, _0);
-        A(_0, o);
+        AriaXOR(i, ck, o);
+        SL1(o, o);
+        A(o, o);
     }
     //feistel even
     private void FE(byte[] i, byte[] ck, byte[] o) {
-        byte[] _0 = new byte[16];
-        AriaXOR(i, ck, _0);
-        SL2(_0, _0);
-        A(_0, o);
+        AriaXOR(i, ck, o);
+        SL2(o, o);
+        A(o, o);
     }
 
     private void SL1(byte[] i,byte[] o){
@@ -176,62 +170,59 @@ public class Aria {
         FO(W[2], CK[3], W[3]);
         AriaXOR(W[3], W[1], W[3]);
 
-        byte[] _0 = new byte[16];
+        SROTR128(W[1], 19, encRK[0]);
+        AriaXOR(W[0], encRK[0], encRK[0]);
 
-        SROTR128(W[1], 19, _0);
-        AriaXOR(W[0], _0, encRK[0]);
+        SROTR128(W[2], 19, encRK[1]);
+        AriaXOR(W[1], encRK[1], encRK[1]);
 
-        SROTR128(W[2], 19, _0);
-        AriaXOR(W[1], _0, encRK[1]);
+        SROTR128(W[3], 19, encRK[2]);
+        AriaXOR(W[2], encRK[2], encRK[2]);
 
-        SROTR128(W[3], 19, _0);
-        AriaXOR(W[2], _0, encRK[2]);
+        SROTR128(W[0], 19, encRK[3]);
+        AriaXOR(encRK[3], W[3], encRK[3]);
 
-        SROTR128(W[0], 19, _0);
-        AriaXOR(_0, W[3], encRK[3]);
+        SROTR128(W[1], 31, encRK[4]);
+        AriaXOR(W[0], encRK[4], encRK[4]);
 
-        SROTR128(W[1], 31, _0);
-        AriaXOR(W[0], _0, encRK[4]);
+        SROTR128(W[2], 31, encRK[5]);
+        AriaXOR(W[1], encRK[5], encRK[5]);
 
-        SROTR128(W[2], 31, _0);
-        AriaXOR(W[1], _0, encRK[5]);
+        SROTR128(W[3], 31, encRK[6]);
+        AriaXOR(W[2], encRK[6], encRK[6]);
 
-        SROTR128(W[3], 31, _0);
-        AriaXOR(W[2], _0, encRK[6]);
+        SROTR128(W[0], 31, encRK[7]);
+        AriaXOR(encRK[7], W[3], encRK[7]);
 
-        SROTR128(W[0], 31, _0);
-        AriaXOR(_0, W[3], encRK[7]);
+        SROTR128(W[1], 128 - 61, encRK[8]);
+        AriaXOR(W[0], encRK[8], encRK[8]);
 
-        SROTR128(W[1], 128 - 61, _0);
-        AriaXOR(W[0], _0, encRK[8]);
+        SROTR128(W[2], 128 - 61, encRK[9]);
+        AriaXOR(W[1], encRK[9], encRK[9]);
 
-        SROTR128(W[2], 128 - 61, _0);
-        AriaXOR(W[1], _0, encRK[9]);
+        SROTR128(W[3], 128 - 61, encRK[10]);
+        AriaXOR(W[2], encRK[10], encRK[10]);
 
-        SROTR128(W[3], 128 - 61, _0);
-        AriaXOR(W[2], _0, encRK[10]);
+        SROTR128(W[0], 128 - 61, encRK[11]);
+        AriaXOR(encRK[11], W[3], encRK[11]);
 
-        SROTR128(W[0], 128 - 61, _0);
-        AriaXOR(_0, W[3], encRK[11]);
-
-        SROTR128(W[1], 128 - 31, _0);
-        AriaXOR(W[0], _0, encRK[12]);
+        SROTR128(W[1], 128 - 31, encRK[12]);
+        AriaXOR(W[0], encRK[12], encRK[12]);
 
         if (round >= 14) {
-            SROTR128(W[2], 128 - 31, _0);
-            AriaXOR(W[1], _0, encRK[13]);
+            SROTR128(W[2], 128 - 31, encRK[13]);
+            AriaXOR(W[1], encRK[13], encRK[13]);
 
-            // ek15 = W2 ^ (W3 <<< 31)
-            SROTR128(W[3], 128 - 31, _0);
-            AriaXOR(W[2], _0, encRK[14]);
+            SROTR128(W[3], 128 - 31, encRK[14]);
+            AriaXOR(W[2], encRK[14], encRK[14]);
         }
 
         if (round == 16) {
-            SROTR128(W[0], 128 - 31, _0);
-            AriaXOR(_0, W[3], encRK[15]);
+            SROTR128(W[0], 128 - 31, encRK[15]);
+            AriaXOR(encRK[15], W[3], encRK[15]);
 
-            SROTR128(W[1], 128 - 19, _0);
-            AriaXOR(W[0], _0, encRK[16]);
+            SROTR128(W[1], 128 - 19, encRK[16]);
+            AriaXOR(W[0], encRK[16], encRK[16]);
         }
     }
 
