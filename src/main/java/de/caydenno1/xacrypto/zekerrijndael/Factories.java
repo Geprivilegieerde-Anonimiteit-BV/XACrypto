@@ -42,14 +42,22 @@ public class Factories {
     private static void checkECBenabled() throws XACryptoException {
         if (!ecbOptIn) {
         throw new XACryptoException(
-            "ECB mode is not secure because it can leak data patterns. Call Factories.allowInsecureECB() before using ECB. "
+            "ECB mode is not secure because it can leak data patterns. Call Factories.allowInsecureECB() before using ECB."
         );
         }
     }
 
-    /**
-     * @deprecated Use {@link Factories.GCM} or other authenticated encryption modes instead.
-     */
+/**
+ * Provides ECB mode cipher factories.
+ *
+ * <p><strong>Warning:</strong> ECB mode is insecure because identical
+ * plaintext blocks produce identical ciphertext blocks, leaking data patterns.
+ *
+ * <p>This class requires opt-in using
+ * {@link Factories#allowInsecureECB()} and exists only for backwards compatibility.
+ *
+ * @deprecated Use GCM or another secure encryption mode instead.
+ */
     @Deprecated
     public static class ECB {
         public static de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.interfaces.ECBExceptionless Blowfish(byte[] key) throws XACryptoException { checkECBenabled(); return new BlowfishECB(key); }
