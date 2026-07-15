@@ -110,7 +110,7 @@ public final class SHA256 {
                     try {
                         res[i] = Double ? doubleHash(leaves.get(from + i))
                                 : hash(leaves.get(from + i));
-                    } catch (XACryptoException e) {};
+                    } catch (XACryptoException e) { throw new RuntimeException(e); }
                 }
                 return res;
             }
@@ -137,7 +137,7 @@ public final class SHA256 {
     public static byte[] merkRootDuo(java.util.List<byte[]> leaves) throws XACryptoException {
         if (leaves.isEmpty()) throw new XACryptoException("leaves List is empty!");
 
-        byte[][] lvl = ForkJoinPool.commonPool().invoke(new HashTask(leaves, 0, leaves.size(), false));
+        byte[][] lvl = ForkJoinPool.commonPool().invoke(new HashTask(leaves, 0, leaves.size(), true));
         return mergeUp(lvl, (int)2);
     };
 
@@ -151,6 +151,7 @@ public final class SHA256 {
                         : doubleHash(conc(lvl[i], lvl[i + 1]));
             }
             if (lvl.length % 2 == 1) up[nx-1] = lvl[lvl.length - 1];
+            lvl = up;
         }
         return lvl[0];
     }

@@ -7,12 +7,7 @@ import static de.caydenno1.xacrypto.zekerrijndael.UnchangingData.SERPENT_SBOX;
 import static de.caydenno1.xacrypto.zekerrijndael.UnchangingData.SERPENT_IBOX;
 import static de.caydenno1.xacrypto.zekerrijndael.UnchangingData.SERPENT_PHI;
 
-interface SerpentCipher extends BlockCipher {
-    byte[] encryptBlock(byte[] in) throws XACryptoException;
-    byte[] decryptBlock(byte[] in) throws XACryptoException;
-}
-
-public class Serpent implements SerpentCipher {
+public class Serpent implements BlockCipher {
     private final int[][] K;
 
     public Serpent(byte[] key) throws XACryptoException {
@@ -61,7 +56,7 @@ public class Serpent implements SerpentCipher {
         System.arraycopy(key, 0, pk, 0, key.length);
         if (key.length < 32) pk[key.length] = (byte) 0x01;
 
-        int[] w = new int[104];
+        int[] w = new int[140];
         for (int i = 0 ; i < 8 ; i++) {
             w[i] = (pk[i * 4] & 0xFF) | ((pk[i * 4 + 1] & 0xFF) << 8) |
                    ((pk[i * 4 + 2] & 0xFF) << 16) | ((pk[i * 4 + 3] & 0xFF) << 24);
@@ -76,7 +71,7 @@ public class Serpent implements SerpentCipher {
         for (int i = 0 ; i < 33 ; i++) {
             int[] group = { w[8 + 4 * i], w[8 + 4 * i + 1], w[8 + 4 * i + 2], w[8 + 4 * i + 3] };
 
-            int index = (3 - i) % 8;
+            int index = Math.floorMod(3 - i, 8);
 
             SBOXify(index, group, SERPENT_SBOX);
 

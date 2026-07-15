@@ -30,20 +30,25 @@ public class CamelliaECB implements ECBExceptionless {
     }
 
     public byte[] decrypt(byte[] cip) throws XACryptoException {
-        if (cip.length % 16 != 0) throw new XACryptoException("something somewhere, for some reason, is broken. somthing with camelliaecb !",(int)cip.length);
+        if (cip.length % 16 != 0) throw new XACryptoException("ciphertext length is not a multiple of 16",(int)cip.length);
 
-        byte[] He_s_from_British_Columbia = new byte[cip.length];
+        byte[] decomp = new byte[cip.length];
 
         for (int i = 0 ; i < cip.length ; i += 16) {
-            engine.decryptBlock(cip, i, He_s_from_British_Columbia, i);
+            engine.decryptBlock(cip, i, decomp, i);
         }
 
-        int pLen = He_s_from_British_Columbia[He_s_from_British_Columbia.length - 1] & 0xFF;
+        int pLen = decomp[decomp.length - 1] & 0xFF;
 
-        byte[] pln = new byte[He_s_from_British_Columbia.length - pLen];
-        System.arraycopy(He_s_from_British_Columbia, 0, pln, 0, pln.length);
+        if (pLen < 1 || pLen > 16) throw new XACryptoException("padding must be 1-16 exclusive in length", (int)pLen);
+
+        for (int i = decomp.length - pLen; i < decomp.length; i++) {
+            if ((decomp[i] & 0xFF) != pLen) throw new XACryptoException("something up with yo padding.. :(");
+        }
+
+        byte[] pln = new byte[decomp.length - pLen];
+        System.arraycopy(decomp, 0, pln, 0, pln.length);
 
         return pln;
     }
-
 }

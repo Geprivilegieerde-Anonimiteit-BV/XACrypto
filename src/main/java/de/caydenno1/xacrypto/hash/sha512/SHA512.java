@@ -7,6 +7,8 @@ import static de.caydenno1.xacrypto.misc.Constants.SHA512_H0;
 import static de.caydenno1.xacrypto.misc.Constants.SHA512_K;
 
 public class SHA512 {
+    private static final char[] HEX = "0123456789abcdef".toCharArray();
+
     public static byte[] digest(byte[] mesg) {
         long bitLen = (long) mesg.length * 8L;
 
@@ -83,13 +85,11 @@ public class SHA512 {
     }
 
     public static String BYTE2STR(byte[] data) {
-        StringBuilder sb = new StringBuilder(data.length * 2);
-
-        for (byte b : data) {
-            sb.append(Character.forDigit((b >>> 4) & 0xF, 16));
-            sb.append(Character.forDigit(b & 0xF, 16));
+        char[] out = new char[data.length * 2];
+        for (int i = 0; i < data.length; i++) {
+            out[i * 2]     = HEX[(data[i] >>> 4) & 0xF];
+            out[i * 2 + 1] = HEX[data[i] & 0xF];
         }
-
-        return sb.toString();
+        return new String(out);
     }
 }

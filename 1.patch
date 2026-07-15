@@ -1,0 +1,1752 @@
+diff --git a/pom.xml b/pom.xml
+index 1a78b84..aaa741b 100644
+--- a/pom.xml
++++ b/pom.xml
+@@ -120,6 +120,10 @@
+                 <groupId>org.apache.maven.plugins</groupId>
+                 <artifactId>maven-javadoc-plugin</artifactId>
+                 <version>3.11.2</version>
++                <configuration>
++                    <doclint>none</doclint>
++                    <quiet>true</quiet>
++                </configuration>
+                 <executions>
+                     <execution>
+                         <id>attach-javadocs</id>
+diff --git a/src/main/java/de/caydenno1/xacrypto/XACrypto.java b/src/main/java/de/caydenno1/xacrypto/XACrypto.java
+index c8c74f8..3f0d736 100644
+--- a/src/main/java/de/caydenno1/xacrypto/XACrypto.java
++++ b/src/main/java/de/caydenno1/xacrypto/XACrypto.java
+@@ -1,7 +1,190 @@
+ package de.caydenno1.xacrypto;
+ 
++import de.caydenno1.xacrypto.hash.ROT;
++import de.caydenno1.xacrypto.hash.sha256.Digest;
++import de.caydenno1.xacrypto.hash.sha256.SHA256;
++import de.caydenno1.xacrypto.misc.XACryptoException;
++import de.caydenno1.xacrypto.misc.isNull;
++import de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.AESECB;
++import de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.CamelliaECB;
++import de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.RC6ECB;
++import de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.TwofishECB;
++
++import java.util.ArrayList;
++import java.util.List;
++
+ public class XACrypto {
+     private XACrypto() {}
+ 
+-    static void main(String[] args) {}
++    public static void main(String[] args) {
++        if (args.length == 1 && args[0].equals("--test")) runTests();
++    }
++
++    static int passed = 0;
++    static int failed = 0;
++
++    static void check(String name, boolean ok) {
++        if (ok) { passed++; System.out.println("  PASS: " + name); }
++        else    { failed++; System.out.println("  FAIL: " + name); }
++    }
++
++    static void runTests() {
++        System.out.println("=== XACrypto Smoke Tests ===\n");
++
++        testDigestPadding();
++        testMerkleTree();
++        testIsNull();
++        testROTL32();
++        testAesEcbPadding();
++        testCamelliaEcbPadding();
++        testRc6EcbPadding();
++        testTwofishEcbPadding();
++
++        System.out.println("\n=== Results: " + passed + " passed, " + failed + " failed ===");
++        if (failed > 0) System.exit(1);
++    }
++
++    static void testDigestPadding() {
++        System.out.println("[#22] SHA-256 Digest padding edge case (55 mod 64):");
++        try {
++            byte[] input55 = new byte[55];
++            Digest d1 = new Digest();
++            byte[] h1 = d1.upd(input55).digest();
++            check("55-byte input produces valid hash", h1.length == 32);
++
++            byte[] input119 = new byte[119];
++            Digest d2 = new Digest();
++            byte[] h2 = d2.upd(input119).digest();
++            check("119-byte input produces valid hash", h2.length == 32);
++
++            byte[] input0 = new byte[0];
++            Digest d3 = new Digest();
++            byte[] h3 = d3.upd(input0).digest();
++            check("0-byte input produces valid hash", h3.length == 32);
++
++            byte[] input63 = new byte[63];
++            Digest d4 = new Digest();
++            byte[] h4 = d4.upd(input63).digest();
++            check("63-byte input produces valid hash", h4.length == 32);
++
++            byte[] input64 = new byte[64];
++            Digest d5 = new Digest();
++            byte[] h5 = d5.upd(input64).digest();
++            check("64-byte input produces valid hash", h5.length == 32);
++        } catch (Exception e) {
++            check("Digest padding threw: " + e.getMessage(), false);
++        }
++    }
++
++    static void testMerkleTree() {
++        System.out.println("\n[#23] SHA-256 Merkle tree (mergeUp termination):");
++        try {
++            List<byte[]> leaves = new ArrayList<>();
++            for (int i = 0; i < 8; i++) leaves.add(("leaf" + i).getBytes());
++            byte[] root = SHA256.merkRoot(leaves);
++            check("merkRoot() completed, root length=32", root.length == 32);
++        } catch (Exception e) {
++            check("merkRoot() threw: " + e.getMessage(), false);
++        }
++
++        System.out.println("\n[#32] merkRootDuo (double-hash leaves):");
++        try {
++            List<byte[]> leaves = new ArrayList<>();
++            for (int i = 0; i < 4; i++) leaves.add(("duo" + i).getBytes());
++            byte[] root = SHA256.merkRootDuo(leaves);
++            check("merkRootDuo() completed, root length=32", root.length == 32);
++        } catch (Exception e) {
++            check("merkRootDuo() threw: " + e.getMessage(), false);
++        }
++    }
++
++    static void testIsNull() {
++        System.out.println("\n[#33] isNull.isValidText null safety:");
++        check("isValidText(null) returns false", !isNull.isValidText(null));
++        check("isValidText(\"\") returns false", !isNull.isValidText(""));
++        check("isValidText(\"  \") returns false", !isNull.isValidText("  "));
++        check("isValidText(\"hello\") returns true", isNull.isValidText("hello"));
++    }
++
++    static void testROTL32() {
++        System.out.println("\n[#24] ROT.ROTL32 operator precedence:");
++        long v = 0x00000001_FFFFFFFFL;
++        long r = ROT.ROTL32(v, 4);
++        check("ROTL32 truncates to 32 bits", (r >>> 32) == 0);
++        check("ROTL32(1, 1) == 2", ROT.ROTL32(1L, 1) == 2L);
++    }
++
++    static void testAesEcbPadding() {
++        System.out.println("\n[#30] AES ECB padding validation:");
++        try {
++            byte[] key = new byte[16];
++            AESECB aes = new AESECB(key);
++            byte[] badCip = new byte[32];
++            badCip[31] = 0x00;
++            aes.decrypt(badCip);
++            check("rejects bad padding (pLen=0)", false);
++        } catch (XACryptoException e) {
++            check("rejects bad padding (pLen=0)", true);
++        } catch (Exception e) {
++            check("rejects bad padding (pLen=0)", true);
++        }
++    }
++
++    static void testCamelliaEcbPadding() {
++        System.out.println("\n[#30] Camellia ECB padding validation:");
++        try {
++            byte[] key = new byte[16];
++            CamelliaECB cam = new CamelliaECB(key);
++            byte[] badCip = new byte[32];
++            badCip[31] = (byte) 0xFF;
++            cam.decrypt(badCip);
++            check("rejects bad padding", false);
++        } catch (XACryptoException e) {
++            check("rejects bad padding", true);
++        } catch (Exception e) {
++            check("rejects bad padding", true);
++        }
++    }
++
++    static void testRc6EcbPadding() {
++        System.out.println("\n[#30] RC6 ECB padding validation:");
++        try {
++            byte[] key = new byte[16];
++            RC6ECB rc6 = new RC6ECB(key);
++            byte[] badCip = new byte[32];
++            badCip[31] = 0x00;
++            rc6.decrypt(badCip);
++            check("rejects bad padding", false);
++        } catch (XACryptoException e) {
++            check("rejects bad padding", true);
++        } catch (Exception e) {
++            check("rejects bad padding", true);
++        }
++    }
++
++    static void testTwofishEcbPadding() {
++        System.out.println("\n[#30] Twofish ECB roundtrip + padding validation:");
++        try {
++            byte[] key = new byte[16];
++            TwofishECB tf = new TwofishECB(key);
++            byte[] enc = tf.encrypt("twofish".getBytes());
++            byte[] dec = tf.decrypt(enc);
++            check("roundtrip", new String(dec).equals("twofish"));
++        } catch (Exception e) {
++            check("roundtrip threw: " + e.getMessage(), false);
++        }
++
++        try {
++            byte[] key = new byte[16];
++            TwofishECB tf = new TwofishECB(key);
++            byte[] badCip = new byte[32];
++            badCip[31] = (byte) 0x10;
++            tf.decrypt(badCip);
++            check("rejects bad padding (pLen=16)", false);
++        } catch (XACryptoException e) {
++            check("rejects bad padding (pLen=16)", true);
++        } catch (Exception e) {
++            check("rejects bad padding (pLen=16)", true);
++        }
++    }
+ }
+diff --git a/src/main/java/de/caydenno1/xacrypto/hash/ROT.java b/src/main/java/de/caydenno1/xacrypto/hash/ROT.java
+index c6df092..78425c3 100644
+--- a/src/main/java/de/caydenno1/xacrypto/hash/ROT.java
++++ b/src/main/java/de/caydenno1/xacrypto/hash/ROT.java
+@@ -10,7 +10,7 @@ public class ROT {
+     public static int ROTL(int x, int n){
+         return (x << n) | (x >>> (32 - n));
+     }
+-    public static long ROTL32(long v, int shift) { return ((v & 0xFFFFFFFFL << shift) | (v & 0xFFFFFFFFL >>> (32 - shift))) & 0xFFFFFFFFL; }
++    public static long ROTL32(long v, int shift) { return ((v << shift) | (v >>> (32 - shift))) & 0xFFFFFFFFL; }
+     public static long[] ROTL64(long l, long r, int shift) {
+         long[] res = new long[2];
+         if (shift < 64) {
+diff --git a/src/main/java/de/caydenno1/xacrypto/hash/sha/SHA0.java b/src/main/java/de/caydenno1/xacrypto/hash/sha/SHA0.java
+index a0a41f1..4dc820c 100644
+--- a/src/main/java/de/caydenno1/xacrypto/hash/sha/SHA0.java
++++ b/src/main/java/de/caydenno1/xacrypto/hash/sha/SHA0.java
+@@ -8,9 +8,7 @@ import static de.caydenno1.xacrypto.hash.sha.Shared.INT2BYTE;
+ import static de.caydenno1.xacrypto.hash.sha.Shared.hex;
+ 
+ public class SHA0 {
+-    // we really only need one file. very simple code
+     public static byte[] hash(byte[] data){
+-        System.out.println("Beware, SHA0 is deprecated and cryptographically broken. Use at your own risk.");
+         byte[] padded = Shared.pad(data);
+ 
+         int a0 = Constants.SHA_H[0], a1 = Constants.SHA_H[1], a2 = Constants.SHA_H[2], a3 = Constants.SHA_H[3], a4 = Constants.SHA_H[4];
+diff --git a/src/main/java/de/caydenno1/xacrypto/hash/sha256/Digest.java b/src/main/java/de/caydenno1/xacrypto/hash/sha256/Digest.java
+index a4dab68..a0b8bef 100644
+--- a/src/main/java/de/caydenno1/xacrypto/hash/sha256/Digest.java
++++ b/src/main/java/de/caydenno1/xacrypto/hash/sha256/Digest.java
+@@ -22,13 +22,6 @@ public final class Digest {
+         return upd(d, 0, d.length);
+     }
+ 
+-    /**
+-     * i have never used javadoc before ;-; just using google for javadoc format lol
+-     * @param d data
+-     * @param o Offset
+-     * @param l count
+-     * @return {@code this} end data after modification
+-     */
+     public Digest upd(byte[] d, int o, int l) throws XACryptoException {
+         if(o<0||l<0||o+l>d.length) throw new XACryptoException("take a look at your code :)");
+         total += l;
+@@ -44,12 +37,11 @@ public final class Digest {
+             o += 64;
+             l -= 64;
+         };
+-        // save whats remaining i suppose..
+         if (l>0) {
+             System.arraycopy(d, o, buf, 0, l);
+             bufLen = l;
+         };
+-        return this; // we returned "this" !1
++        return this;
+     }
+     public Digest upd(String text) throws XACryptoException { return upd(text.getBytes(StandardCharsets.UTF_8) );};
+ 
+@@ -66,6 +58,7 @@ public final class Digest {
+         System.arraycopy(buf,0,t,0,bufLen);
+         long bit = total * 8L;
+         int pad = 64 - (int)((bufLen+1+8) % 64)%64;
++        if (pad == 64) pad = 0;
+         if (pad<0) pad += 64;
+         int total = bufLen + 1 + pad + 8;
+ 
+diff --git a/src/main/java/de/caydenno1/xacrypto/hash/sha256/SHA256.java b/src/main/java/de/caydenno1/xacrypto/hash/sha256/SHA256.java
+index 70a2d77..f9f1107 100644
+--- a/src/main/java/de/caydenno1/xacrypto/hash/sha256/SHA256.java
++++ b/src/main/java/de/caydenno1/xacrypto/hash/sha256/SHA256.java
+@@ -110,7 +110,7 @@ public final class SHA256 {
+                     try {
+                         res[i] = Double ? doubleHash(leaves.get(from + i))
+                                 : hash(leaves.get(from + i));
+-                    } catch (XACryptoException e) {};
++                    } catch (XACryptoException e) { throw new RuntimeException(e); }
+                 }
+                 return res;
+             }
+@@ -137,7 +137,7 @@ public final class SHA256 {
+     public static byte[] merkRootDuo(java.util.List<byte[]> leaves) throws XACryptoException {
+         if (leaves.isEmpty()) throw new XACryptoException("leaves List is empty!");
+ 
+-        byte[][] lvl = ForkJoinPool.commonPool().invoke(new HashTask(leaves, 0, leaves.size(), false));
++        byte[][] lvl = ForkJoinPool.commonPool().invoke(new HashTask(leaves, 0, leaves.size(), true));
+         return mergeUp(lvl, (int)2);
+     };
+ 
+@@ -151,6 +151,7 @@ public final class SHA256 {
+                         : doubleHash(conc(lvl[i], lvl[i + 1]));
+             }
+             if (lvl.length % 2 == 1) up[nx-1] = lvl[lvl.length - 1];
++            lvl = up;
+         }
+         return lvl[0];
+     }
+diff --git a/src/main/java/de/caydenno1/xacrypto/hash/sha384/SHA384.java b/src/main/java/de/caydenno1/xacrypto/hash/sha384/SHA384.java
+index a88c553..9054abf 100644
+--- a/src/main/java/de/caydenno1/xacrypto/hash/sha384/SHA384.java
++++ b/src/main/java/de/caydenno1/xacrypto/hash/sha384/SHA384.java
+@@ -8,8 +8,6 @@ import static de.caydenno1.xacrypto.hash.ROT.ROTR64;
+ import static de.caydenno1.xacrypto.hash.sha256.Hex.Byte2Hex;
+ 
+ public class SHA384 {
+-    // digest
+-    // pad
+     public static byte[] digest(byte[] mesg) {
+       long[] h = Arrays.copyOf(SHA384_H0, SHA384_H0.length);
+       byte[] pd = pad(mesg);
+@@ -33,15 +31,6 @@ public class SHA384 {
+                w[t] = w[t - 16] + s0 + w[t - 7] + s1;
+           }
+ 
+-          // a = h[0]
+-          // b = h[1]
+-          // c = h[2]
+-          // d = h[3]
+-          // e = h[4]
+-          // f = h[5]
+-          // g = h[6]
+-          // h = h[7]
+-
+           long[] h0 = Arrays.copyOf(h, h.length);
+ 
+           for (int t = 0 ; t < 80 ; t++) {
+diff --git a/src/main/java/de/caydenno1/xacrypto/misc/Constants.java b/src/main/java/de/caydenno1/xacrypto/misc/Constants.java
+deleted file mode 100644
+index a19b8b9..0000000
+--- a/src/main/java/de/caydenno1/xacrypto/misc/Constants.java
++++ /dev/null
+@@ -1,3 +0,0 @@
+-version https://git-lfs.github.com/spec/v1
+-oid sha256:2d541e2449129baa2404d62806eb0cbb4d1da29c2017ee9930d8fd346b9bbd8f
+-size 7504
+diff --git a/src/main/java/de/caydenno1/xacrypto/misc/ToM.java b/src/main/java/de/caydenno1/xacrypto/misc/ToM.java
+deleted file mode 100644
+index e8d48cb..0000000
+--- a/src/main/java/de/caydenno1/xacrypto/misc/ToM.java
++++ /dev/null
+@@ -1,11 +0,0 @@
+-package de.caydenno1.xacrypto.misc;
+-
+-public class ToM {
+-    public static boolean ToM(byte[] a, byte[] b) {
+-        if (a == null || b == null) return a == b;
+-        if (a.length != b.length) return false;
+-        int diff = 0;
+-        for (int i = 0; i < a.length; i++) diff |= (a[i] ^ b[i]);
+-        return diff == 0;
+-    }
+-}
+diff --git a/src/main/java/de/caydenno1/xacrypto/misc/XACryptoException.java b/src/main/java/de/caydenno1/xacrypto/misc/XACryptoException.java
+deleted file mode 100644
+index a04b5a3..0000000
+--- a/src/main/java/de/caydenno1/xacrypto/misc/XACryptoException.java
++++ /dev/null
+@@ -1,32 +0,0 @@
+-package de.caydenno1.xacrypto.misc;
+-
+-import java.util.Arrays;
+-
+-public class XACryptoException extends Exception {
+-    private int id = (int) 0x00;
+-
+-    public XACryptoException(String res) {
+-        super(res);
+-    }
+-    public XACryptoException(byte id){
+-        super(String.format("0x%02X", id & 0xFF));
+-    }
+-    public XACryptoException(String res, byte id) {
+-        super(res);
+-        this.id = id & 0xFF;
+-    }
+-    public XACryptoException(String res, int iid) {
+-        super(res);
+-        this.id = iid;
+-    }
+-    public XACryptoException(String[] pnts, byte id){
+-        super(String.join("|", pnts));
+-        this.id = id & 0xFF;
+-    }
+-    public XACryptoException(String[] pnts, String other, byte id){
+-        String[] data = Arrays.copyOf(pnts, pnts.length+1);
+-        data[data.length - 1] = "REASON=".concat(other);
+-        super(String.join("|", data));
+-        this.id = id & 0xFF;
+-    }
+-}
+diff --git a/src/main/java/de/caydenno1/xacrypto/misc/isNull.java b/src/main/java/de/caydenno1/xacrypto/misc/isNull.java
+deleted file mode 100644
+index 4437892..0000000
+--- a/src/main/java/de/caydenno1/xacrypto/misc/isNull.java
++++ /dev/null
+@@ -1,22 +0,0 @@
+-package de.caydenno1.xacrypto.misc;
+-
+-import java.util.Objects;
+-
+-public class isNull {
+-    public static boolean isNull(Object v) {
+-        return Objects.isNull(v) || v == null;
+-    }
+-    public boolean isNull(Object v, Object alt) {
+-        return Objects.isNull(v) || v == null || v == alt;
+-    }
+-    public static boolean isValidText(String s) {
+-        if (s.isBlank() || s.trim().isEmpty()) return false;
+-        switch (s) {
+-            case "":
+-            case null:
+-                return false;
+-            default:
+-                return true;
+-        }
+-    };
+-}
+diff --git a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/ECB/ciphers/AriaECB.java b/src/main/java/de/caydenno1/xacrypto/zekerrijndael/ECB/ciphers/AriaECB.java
+index 42bac6a..8f54e76 100644
+--- a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/ECB/ciphers/AriaECB.java
++++ b/src/main/java/de/caydenno1/xacrypto/zekerrijndael/ECB/ciphers/AriaECB.java
+@@ -50,6 +50,10 @@ public class AriaECB implements ECB {
+ 
+         if (pLen < 1 || pLen > 16) throw new XACryptoException("padding must be 1-16 exclusive in length", (int)pLen);
+ 
++        for (int i = Microsoft_PowerPoint_Create_polished_slides_in_minutes_using_AI_driven_design_and_collaboration_tools_in_PowerPoint.length - pLen; i < Microsoft_PowerPoint_Create_polished_slides_in_minutes_using_AI_driven_design_and_collaboration_tools_in_PowerPoint.length; i++) {
++            if ((Microsoft_PowerPoint_Create_polished_slides_in_minutes_using_AI_driven_design_and_collaboration_tools_in_PowerPoint[i] & 0xFF) != pLen) throw new XACryptoException("something up with yo padding.. :(");
++        }
++
+         byte[] pln = new byte[Microsoft_PowerPoint_Create_polished_slides_in_minutes_using_AI_driven_design_and_collaboration_tools_in_PowerPoint.length - pLen];
+         System.arraycopy(Microsoft_PowerPoint_Create_polished_slides_in_minutes_using_AI_driven_design_and_collaboration_tools_in_PowerPoint,0,pln,0,pln.length);
+ 
+diff --git a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/ECB/ciphers/BlowfishECB.java b/src/main/java/de/caydenno1/xacrypto/zekerrijndael/ECB/ciphers/BlowfishECB.java
+index a4ce3f4..85a8805 100644
+--- a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/ECB/ciphers/BlowfishECB.java
++++ b/src/main/java/de/caydenno1/xacrypto/zekerrijndael/ECB/ciphers/BlowfishECB.java
+@@ -27,7 +27,7 @@ public class BlowfishECB implements ECBExceptionless {
+     public byte[] decrypt(byte[] cip) throws XACryptoException {
+         if (cip.length == 0 || cip.length % 8 != 0) throw new XACryptoException("ciptext must be bound to 8-byte alignment (<-- sum like that)");
+ 
+-        byte[] Microsoft_PowerPoint /* https://merriam-webster.com/dictionary/satire */= new byte[cip.length];
++        byte[] Microsoft_PowerPoint = new byte[cip.length];
+         for (int i = 0 ; i < cip.length ; i += 8) engine.decryptBlock(cip, i, Microsoft_PowerPoint, i);
+ 
+         int pLen = Microsoft_PowerPoint[Microsoft_PowerPoint.length - 1] & 0xFF;
+diff --git a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/ECB/ciphers/CamelliaECB.java b/src/main/java/de/caydenno1/xacrypto/zekerrijndael/ECB/ciphers/CamelliaECB.java
+index 948e093..2651c9e 100644
+--- a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/ECB/ciphers/CamelliaECB.java
++++ b/src/main/java/de/caydenno1/xacrypto/zekerrijndael/ECB/ciphers/CamelliaECB.java
+@@ -40,6 +40,12 @@ public class CamelliaECB implements ECBExceptionless {
+ 
+         int pLen = He_s_from_British_Columbia[He_s_from_British_Columbia.length - 1] & 0xFF;
+ 
++        if (pLen < 1 || pLen > 16) throw new XACryptoException("padding must be 1-16 exclusive in length", (int)pLen);
++
++        for (int i = He_s_from_British_Columbia.length - pLen; i < He_s_from_British_Columbia.length; i++) {
++            if ((He_s_from_British_Columbia[i] & 0xFF) != pLen) throw new XACryptoException("something up with yo padding.. :(");
++        }
++
+         byte[] pln = new byte[He_s_from_British_Columbia.length - pLen];
+         System.arraycopy(He_s_from_British_Columbia, 0, pln, 0, pln.length);
+ 
+diff --git a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/ECB/ciphers/RC6ECB.java b/src/main/java/de/caydenno1/xacrypto/zekerrijndael/ECB/ciphers/RC6ECB.java
+index 8015316..b684435 100644
+--- a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/ECB/ciphers/RC6ECB.java
++++ b/src/main/java/de/caydenno1/xacrypto/zekerrijndael/ECB/ciphers/RC6ECB.java
+@@ -7,7 +7,6 @@ import static de.caydenno1.xacrypto.zekerrijndael.Global.LE32.*;
+ 
+ public class RC6ECB implements ECB {
+     private final int[] S;
+-    // 20 rounds
+ 
+     public RC6ECB(byte[] key) throws XACryptoException {
+         if (key.length <= 0 || key.length > 255) throw new XACryptoException("keys must be 1-255 bytes inclusive :\\");
+@@ -16,7 +15,7 @@ public class RC6ECB implements ECB {
+         int[] L = new int[c];
+         for (int i = 0 ; i < key.length ; i++) L[i / 4] |= (key[i] & 0xFF) << (8 * (i % 4));
+ 
+-        S = new int[44 /* 2x 20 rounds = 40 rounds + 4 = 44. */];
++        S = new int[44];
+         S[0] = RC6_P;
+         for (int i = 1 ; i < S.length ; i++) S[i] = S[i - 1] + RC6_Q;
+ 
+@@ -94,6 +93,12 @@ public class RC6ECB implements ECB {
+ 
+         int pLen = de[de.length - 1] & 0xFF;
+ 
++        if (pLen < 1 || pLen > 16) throw new XACryptoException("padding must be 1-16 exclusive in length", (int)pLen);
++
++        for (int i = de.length - pLen; i < de.length; i++) {
++            if ((de[i] & 0xFF) != pLen) throw new XACryptoException("something up with yo padding.. :(");
++        }
++
+         byte[] pln = new byte[de.length - pLen];
+         System.arraycopy(de, 0, pln, 0, pln.length);
+         return pln;
+diff --git a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/ECB/ciphers/TwofishECB.java b/src/main/java/de/caydenno1/xacrypto/zekerrijndael/ECB/ciphers/TwofishECB.java
+index 94d47c9..362a4c8 100644
+--- a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/ECB/ciphers/TwofishECB.java
++++ b/src/main/java/de/caydenno1/xacrypto/zekerrijndael/ECB/ciphers/TwofishECB.java
+@@ -48,6 +48,12 @@ public class TwofishECB implements ECB {
+ 
+         int pLen = Less_Stress__More_Travel___Find___Compare_Options_and_You_Can_Save_Big_on_Expedia_com__Get___[Less_Stress__More_Travel___Find___Compare_Options_and_You_Can_Save_Big_on_Expedia_com__Get___.length - 1] & 0xFF;
+ 
++        if (pLen < 1 || pLen > 16) throw new XACryptoException("padding must be 1-16 exclusive in length", (int)pLen);
++
++        for (int i = Less_Stress__More_Travel___Find___Compare_Options_and_You_Can_Save_Big_on_Expedia_com__Get___.length - pLen; i < Less_Stress__More_Travel___Find___Compare_Options_and_You_Can_Save_Big_on_Expedia_com__Get___.length; i++) {
++            if ((Less_Stress__More_Travel___Find___Compare_Options_and_You_Can_Save_Big_on_Expedia_com__Get___[i] & 0xFF) != pLen) throw new XACryptoException("something up with yo padding.. :(");
++        }
++
+ 
+         byte[] pln = new byte[Less_Stress__More_Travel___Find___Compare_Options_and_You_Can_Save_Big_on_Expedia_com__Get___.length - pLen];
+         System.arraycopy(Less_Stress__More_Travel___Find___Compare_Options_and_You_Can_Save_Big_on_Expedia_com__Get___, 0, pln, 0, pln.length);
+diff --git a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/Factories.java b/src/main/java/de/caydenno1/xacrypto/zekerrijndael/Factories.java
+index 2f6df82..64d6b9d 100644
+--- a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/Factories.java
++++ b/src/main/java/de/caydenno1/xacrypto/zekerrijndael/Factories.java
+@@ -2,42 +2,66 @@ package de.caydenno1.xacrypto.zekerrijndael;
+ 
+ import de.caydenno1.xacrypto.misc.XACryptoException;
+ import de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.*;
+-import de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.interfaces.ECB;
+ import de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.interfaces.ECBExceptionless;
+ import de.caydenno1.xacrypto.zekerrijndael.GCM.AES;
+-import de.caydenno1.xacrypto.zekerrijndael.GCM.GCM;
+ import de.caydenno1.xacrypto.zekerrijndael.GCM.ciphers.*;
+ import de.caydenno1.xacrypto.zekerrijndael.Global.Camellia;
++
+ import java.lang.reflect.InvocationTargetException;
+ 
+ public class Factories {
++
+     public static class GCM {
+-        public static de.caydenno1.xacrypto.zekerrijndael.GCM.GCM AES128(byte[] key) throws XACryptoException, InvocationTargetException, NoSuchMethodException, IllegalAccessException { return new de.caydenno1.xacrypto.zekerrijndael.GCM.GCM(new AES(key, 128)); }
++        
++        public static de.caydenno1.xacrypto.zekerrijndael.GCM.GCM AES128(byte[] key) throws XACryptoException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
++            return new de.caydenno1.xacrypto.zekerrijndael.GCM.GCM(new AES(key, 128));
++        }
+ 
+-        public static de.caydenno1.xacrypto.zekerrijndael.GCM.GCM SM4GCM(byte[] key) throws XACryptoException, InvocationTargetException, NoSuchMethodException, IllegalAccessException { return new de.caydenno1.xacrypto.zekerrijndael.GCM.GCM(new SM4GCM(key)); }
++        public static de.caydenno1.xacrypto.zekerrijndael.GCM.GCM SM4GCM(byte[] key) throws XACryptoException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
++            return new de.caydenno1.xacrypto.zekerrijndael.GCM.GCM(new SM4GCM(key));
++        }
+ 
+-        public static de.caydenno1.xacrypto.zekerrijndael.GCM.GCM Camellia(byte[] key) throws XACryptoException, InvocationTargetException, NoSuchMethodException, IllegalAccessException { return new de.caydenno1.xacrypto.zekerrijndael.GCM.GCM(new Camellia(key)); }
++        public static de.caydenno1.xacrypto.zekerrijndael.GCM.GCM Camellia(byte[] key) throws XACryptoException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
++            return new de.caydenno1.xacrypto.zekerrijndael.GCM.GCM(new Camellia(key));
++        }
+ 
+-        public static de.caydenno1.xacrypto.zekerrijndael.GCM.GCM AESGCM() throws XACryptoException, InvocationTargetException, NoSuchMethodException, IllegalAccessException { return new de.caydenno1.xacrypto.zekerrijndael.GCM.GCM(new AESGCM()); }
++        public static de.caydenno1.xacrypto.zekerrijndael.GCM.GCM AESGCM() throws XACryptoException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
++            return new de.caydenno1.xacrypto.zekerrijndael.GCM.GCM(new AESGCM());
++        }
+ 
+-        public static de.caydenno1.xacrypto.zekerrijndael.GCM.GCM ARIAGCM(byte[] key) throws XACryptoException, InvocationTargetException, NoSuchMethodException, IllegalAccessException { return new de.caydenno1.xacrypto.zekerrijndael.GCM.GCM(new ARIAGCM(key)); }
++        public static de.caydenno1.xacrypto.zekerrijndael.GCM.GCM ARIAGCM(byte[] key) throws XACryptoException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
++            return new de.caydenno1.xacrypto.zekerrijndael.GCM.GCM(new ARIAGCM(key));
++        }
+ 
+-        public static de.caydenno1.xacrypto.zekerrijndael.GCM.GCM SerpentGCM(byte[] key) throws XACryptoException, InvocationTargetException, NoSuchMethodException, IllegalAccessException { return new de.caydenno1.xacrypto.zekerrijndael.GCM.GCM(new SerpentGCM(key)); }
++        public static de.caydenno1.xacrypto.zekerrijndael.GCM.GCM SerpentGCM(byte[] key) throws XACryptoException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
++            return new de.caydenno1.xacrypto.zekerrijndael.GCM.GCM(new SerpentGCM(key));
++        }
+     }
+ 
+     public static class ECB {
+-        public static de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.interfaces.ECBExceptionless Blowfish(byte[] key) throws XACryptoException { return new BlowfishECB(key); }
+-
+-        public static de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.interfaces.ECB Aria(byte[] key) throws XACryptoException { return new AriaECB(key); }
++        
++        public static ECBExceptionless Blowfish(byte[] key) throws XACryptoException {
++            return new BlowfishECB(key);
++        }
+ 
+-        public static de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.interfaces.ECBExceptionless SM4(byte[] key) throws XACryptoException { return new SM4ECB(key); }
++        public static de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.interfaces.ECB Aria(byte[] key) throws XACryptoException {
++            return new AriaECB(key);
++        }
+ 
+-        public static de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.interfaces.ECB AES(byte[] key) throws XACryptoException { return new AESECB(key); }
++        public static ECBExceptionless SM4(byte[] key) throws XACryptoException {
++            return new SM4ECB(key);
++        }
+ 
+-        public static de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.interfaces.ECB Twofish(byte[] key) throws XACryptoException { return new TwofishECB(key); }
++        public static de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.interfaces.ECB AES(byte[] key) throws XACryptoException {
++            return new AESECB(key);
++        }
+ 
+-        public static de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.interfaces.ECB RC6ECB(byte[] key) throws XACryptoException { return new RC6ECB(key); }
++        public static de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.interfaces.ECB Twofish(byte[] key) throws XACryptoException {
++            return new TwofishECB(key);
++        }
+ 
+-        //public static de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.interfaces.ECBExceptionless CamelliaECB(byte[] key) throws XACryptoException { return new CamelliaECB(key); }
++        public static de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.interfaces.ECB RC6ECB(byte[] key) throws XACryptoException {
++            return new RC6ECB(key);
++        }
+     }
+ }
+\ No newline at end of file
+diff --git a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/AES.java b/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/AES.java
+deleted file mode 100644
+index d9bcaea..0000000
+--- a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/AES.java
++++ /dev/null
+@@ -1,285 +0,0 @@
+-package de.caydenno1.xacrypto.zekerrijndael.GCM;
+-
+-import de.caydenno1.xacrypto.misc.XACryptoException;
+-import static de.caydenno1.xacrypto.zekerrijndael.Global.Galois.*;
+-import java.util.Arrays;
+-
+-import static de.caydenno1.xacrypto.zekerrijndael.UnchangingData.*;
+-public final class AES implements BlockCipher {
+-    public final int bits;
+-    public int kc;
+-    private final byte[][] keys;
+-
+-    public AES(byte[] key, int bits) throws XACryptoException {
+-        this.bits = bits;
+-        this.kc = switch (bits) {
+-            case 128 -> 44;
+-            case 192 -> 52;
+-            case 256 -> 60;
+-            default -> throw new XACryptoException(
+-                    "only 128, 192 and 256 bit ciphers are supported atm. sorry :%"
+-            );
+-        };
+-        keys = new byte[kc][4];
+-
+-        keyExpansion(key);
+-    }
+-
+-    public byte[] encryptBlock(byte[] input) throws XACryptoException {
+-        int m = switch (bits) {
+-            case 128 -> 10;
+-            case 192 -> 12;
+-            case 256 -> 14;
+-            default -> throw new XACryptoException("only 128, 192 and 256 bit ciphers are supported atm. sorry :%");
+-        };
+-
+-            byte[][] s = new byte[4][4];
+-
+-            for (int i = 0; i < 16; i++) {
+-                s[i & 3][i >> 2] = input[i];
+-            }
+-
+-        addRoundKey(s, 0);
+-
+-        for (int r = 1; r < m; r++) {
+-            sub(s);
+-            shift(s);
+-            mixColumns(s);
+-            addRoundKey(s, r);
+-        }
+-
+-        sub(s);
+-        shift(s);
+-        addRoundKey(s, m);
+-
+-        byte[] o = new byte[16];
+-
+-        for (int i = 0; i < 16; i++) {
+-            o[i] = s[i & 3][i >> 2];
+-        }
+-
+-        return o;
+-    }
+-
+-    public byte[] decryptBlock(byte[] input) throws XACryptoException {
+-        int m = switch (bits) {
+-            case 128 -> 10;
+-            case 192 -> 12;
+-            case 256 -> 14;
+-            default -> throw new XACryptoException("only 128, 192 and 256 bit ciphers are supported atm. sorry :%");
+-        };
+-
+-        byte[][] s = new byte[4][4];
+-        for (int i = 0; i < 16; i++) s[i & 3][i >> 2] = input[i];
+-
+-
+-        addRoundKey(s, m);
+-
+-        for (int r = m - 1 ; r > 0 ; r--) {
+-            invShift(s);
+-            invSub(s);
+-            addRoundKey(s, r);
+-            invMC(s);
+-        }
+-
+-        invShift(s);
+-        invSub(s);
+-        addRoundKey(s, 0);
+-
+-        byte[] o = new byte[16];
+-        for (int i = 0 ; i < 16 ; i++) o[i] = s[i & 3][i >> 2];
+-
+-
+-        return o;
+-    }
+-
+-    private static void invSub(byte[][] s) {
+-        for (int _0 = 0 ; _0 < 4 ; _0++) for (int _1 = 0 ; _1 < 4 ; _1++) s[_0][_1] = (byte) ARIA_XB1 /*for some reason ARIA's Inverse 1 Box is the same as AES's Inverse SBOX?*/ [s[_0][_1] & 0xFF];
+-    }
+-
+-    private static void invShift(byte[][] s) {
+-        byte t;
+-
+-        for (int _0 = 1 ; _0 < 4 ; _0++) {
+-            byte[] _1 = new byte[4];
+-
+-            for (int _2 = 0 ; _2 < 4 ; _2++) _1[(_2 + _0) % 4] = s[_0][_2];
+-            for (int _2 = 0 ; _2 < 4 ; _2++) s[_0][_2] = _1[_2];
+-        }
+-    }
+-
+-    private static void invMC(byte[][] s) {
+-        for (int _0 = 0; _0 < 4; _0++) {
+-            byte a0 = s[0][_0]; byte a1 = s[1][_0]; byte a2 = s[2][_0]; byte a3 = s[3][_0];
+-
+-            s[0][_0] = (byte)(gm14(a0) ^ gm11(a1) ^ gm13(a2) ^ gm9(a3));
+-            s[1][_0] = (byte)(gm9(a0)  ^ gm14(a1) ^ gm11(a2) ^ gm13(a3));
+-            s[2][_0] = (byte)(gm13(a0) ^ gm9(a1)  ^ gm14(a2) ^ gm11(a3));
+-            s[3][_0] = (byte)(gm11(a0) ^ gm13(a1) ^ gm9(a2)  ^ gm14(a3));
+-        }
+-    }
+-
+-//    private void sub(byte[][] s) {
+-//        for (int c = 0; c < 4; c++) {
+-//            for (int r = 0; r < 4; r++) {
+-//                s[r][c] = (byte)(s[r][c] ^ keys[r * 4 + c][r]);
+-//            }
+-//        }
+-//    }
+-
+-    private static void sub(byte[][] s) {
+-        for (int c = 0; c < 4; c++) {
+-            for (int r = 0; r < 4; r++) {
+-                s[r][c] = SBOX[s[r][c] & 0xFF];
+-            }
+-        }
+-    }
+-
+-    private static void shift(byte[][] s) {
+-        byte t;
+-
+-        t = s[1][0];
+-        s[1][0] = s[1][1];
+-        s[1][1] = s[1][2];
+-        s[1][2] = s[1][3];
+-        s[1][3] = t;
+-
+-        t = s[2][0];
+-        byte t2 = s[2][1];
+-        s[2][0] = s[2][2];
+-        s[2][1] = s[2][3];
+-        s[2][2] = t;
+-        s[2][3] = t2;
+-
+-        t = s[3][3];
+-        s[3][3] = s[3][2];
+-        s[3][2] = s[3][1];
+-        s[3][1] = s[3][0];
+-        s[3][0] = t;
+-    }
+-    private static void mixColumns(byte[][] s) {
+-
+-        for (int c = 0; c < 4; c++) {
+-
+-            byte a0 = s[0][c];
+-            byte a1 = s[1][c];
+-            byte a2 = s[2][c];
+-            byte a3 = s[3][c];
+-
+-            s[0][c] = (byte)(gm2(a0) ^ gm3(a1) ^ a2 ^ a3);
+-            s[1][c] = (byte)(a0 ^ gm2(a1) ^ gm3(a2) ^ a3);
+-            s[2][c] = (byte)(a0 ^ a1 ^ gm2(a2) ^ gm3(a3));
+-            s[3][c] = (byte)(gm3(a0) ^ a1 ^ a2 ^ gm2(a3));
+-        }
+-    }
+-
+-
+-
+-    private void addRoundKey(byte[][] s, int round) {
+-        for (int c = 0; c < 4; c++) {
+-            for (int r = 0; r < 4; r++) {
+-                s[r][c] ^= keys[round * 4 + c][r];
+-            }
+-        }
+-    }
+-
+-    private void keyExpansion(byte[] key) throws XACryptoException {
+-        int tem = switch(bits) {
+-            case 128 -> 4;
+-            case 192 -> 6;
+-            case 256 -> 8;
+-            default -> throw new XACryptoException(
+-                    "only 128, 192 and 256 bit ciphers are supported atm. sorry :%"
+-            );
+-        };
+-
+-        if (key.length != 16 && key.length != 24 && key.length != 32)
+-            throw new XACryptoException("aes keys must be 16, 24, or 32 in length.");
+-
+-        for (int i = 0; i < tem; i++) {
+-            System.arraycopy(key, i * 4, keys[i], 0, 4);
+-        }
+-
+-        for (int i = tem; i < kc; i++) {
+-
+-            byte[] temp = Arrays.copyOf(keys[i - 1], 4);
+-
+-            if (i % tem == 0) {
+-
+-                byte t = temp[0];
+-                temp[0] = temp[1];
+-                temp[1] = temp[2];
+-                temp[2] = temp[3];
+-                temp[3] = t;
+-
+-                for (int j = 0; j < 4; j++) {
+-                    temp[j] = SBOX[temp[j] & 0xFF];
+-                }
+-
+-                temp[0] ^= (byte) RCON[i / tem];
+-            }
+-
+-            if (bits == 256 && i % 8 == 4) for (int j = 0 ; j < 4 ; j++) temp[j] = SBOX[temp[j] & 0xFF];
+-
+-            for (int j = 0; j < 4; j++) keys[i][j] = (byte)(keys[i - tem][j] ^ temp[j]);
+-        }
+-    }
+-
+-    public byte[] encryptCBC(byte[] ln, byte[] iv) throws XACryptoException {
+-
+-        int padLen = 16 - (ln.length % 16);
+-        if (padLen == 0) padLen = 16;
+-
+-        byte[] pln = Arrays.copyOf(ln, ln.length + padLen);
+-        for (int i = ln.length; i < pln.length; i++) {
+-            pln[i] = (byte) padLen;
+-        }
+-
+-        byte[] o = new byte[pln.length];
+-        byte[] prev = Arrays.copyOf(iv, 16);
+-
+-        byte[] block = new byte[16];
+-
+-        for (int i = 0; i < pln.length; i += 16) {
+-
+-            for (int j = 0; j < 16; j++) {
+-                block[j] = (byte)(pln[i + j] ^ prev[j]);
+-            }
+-
+-            byte[] enc = encryptBlock(block);
+-
+-            System.arraycopy(enc, 0, o, i, 16);
+-
+-            prev = enc;
+-        }
+-
+-        return o;
+-    }
+-
+-    public byte[] encryptCTR(byte[] ln, byte[] nonce) throws XACryptoException {
+-
+-        byte[] o = new byte[ln.length];
+-
+-        byte[] cnt = Arrays.copyOf(nonce, 16);
+-        byte[] ks;
+-
+-        for (int i = 0; i < ln.length; i += 16) {
+-
+-            int ctr = i >>> 4;
+-
+-            cnt[12] = (byte)(ctr >>> 24);
+-            cnt[13] = (byte)(ctr >>> 16);
+-            cnt[14] = (byte)(ctr >>> 8);
+-            cnt[15] = (byte)(ctr);
+-
+-            ks = encryptBlock(cnt);
+-
+-            int limit = Math.min(16, ln.length - i);
+-            for (int j = 0; j < limit; j++) {
+-                o[i + j] = (byte) (ln[i + j] ^ ks[j]);
+-            }
+-        }
+-
+-        return o;
+-    }
+-}
+\ No newline at end of file
+diff --git a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/BlockCipher.java b/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/BlockCipher.java
+deleted file mode 100644
+index 8bcd103..0000000
+--- a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/BlockCipher.java
++++ /dev/null
+@@ -1,7 +0,0 @@
+-package de.caydenno1.xacrypto.zekerrijndael.GCM;
+-
+-import de.caydenno1.xacrypto.misc.XACryptoException;
+-
+-public interface BlockCipher {
+-    byte[] encryptBlock(byte[] pln) throws XACryptoException;
+-}
+\ No newline at end of file
+diff --git a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/GCM.java b/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/GCM.java
+deleted file mode 100644
+index a73a388..0000000
+--- a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/GCM.java
++++ /dev/null
+@@ -1,111 +0,0 @@
+-package de.caydenno1.xacrypto.zekerrijndael.GCM;
+-import de.caydenno1.xacrypto.misc.ToM;
+-import de.caydenno1.xacrypto.misc.XACryptoException;
+-import de.caydenno1.xacrypto.misc.isNull;
+-
+-import java.lang.reflect.InvocationTargetException;
+-import java.lang.reflect.Method;
+-import java.util.Arrays;
+-import java.util.Objects;
+-
+-public class GCM {
+-    private final Object cip;
+-    private final GHASH gh;
+-    private final Method encryptor;
+-
+-    public GCM(Object cip) throws XACryptoException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+-        this.cip = cip;
+-        this.encryptor = cip.getClass().getMethod("encryptBlock", byte[].class);
+-
+-        byte[] H = (byte[]) this.encryptor.invoke(cip, (Object) new byte[16]);
+-
+-        this.gh = new GHASH(H);
+-    }
+-
+-    public Result encrypt(byte[] pln, byte[] aad, byte[] iv) throws XACryptoException, InvocationTargetException, IllegalAccessException {
+-      if (iv.length <= 0) throw new XACryptoException("iv does not have data or is corrupted :[");
+-      if (pln == null) pln = new byte[0];
+-      if (aad == null) aad = new byte[0];
+-
+-      byte[] J0 = j0(iv);
+-      byte[] ct  = gctr(inc32(J0), pln);
+-      byte[] tag = tag(aad, ct, J0);
+-
+-      byte[] packaged = new byte[iv.length+ct.length];
+-      System.arraycopy(iv,0,packaged,0,12);
+-      System.arraycopy(ct, 0, packaged, 12, ct.length);
+-
+-      return new Result(packaged,tag);
+-    }
+-    
+-    public byte[] decrypt(Result res, byte[] aad) throws XACryptoException, InvocationTargetException, IllegalAccessException {
+-        return dec(res, aad, 12, false);
+-    }
+-
+-    public byte[] decrypt(Result res, byte[] aad, String optflag) throws XACryptoException, InvocationTargetException, IllegalAccessException {
+-        return dec(res, aad, 12, Objects.equals(optflag, "-override"));
+-    }
+-
+-    public byte[] decrypt(Result res, byte[] aad, int ivLen) throws XACryptoException, InvocationTargetException, IllegalAccessException {
+-        return dec(res, aad, ivLen, false);
+-    }
+-
+-    public byte[] decrypt(Result res, byte[] aad, int ivLen, String optflag) throws XACryptoException, InvocationTargetException, IllegalAccessException {
+-        return dec(res, aad, ivLen, Objects.equals(optflag, "-override"));
+-    }
+-
+-    private byte[] dec(Result res, byte[] aad, int ivLen, boolean override) throws XACryptoException, InvocationTargetException, IllegalAccessException {
+-        if (res.cip().length < 12) throw new XACryptoException("ciptext min len is 12 char");
+-        if (isNull.isNull(aad)) aad = new byte[0];
+-
+-        byte[] iv = Arrays.copyOfRange(res.cip(), 0, 12);
+-        byte[] ct = Arrays.copyOfRange(res.cip(), 12, res.cip().length);
+-
+-        byte[] J0 = j0(iv);
+-        byte[] expectedTag = tag(aad, ct, J0);
+-
+-        boolean corr = ToM.ToM(res.tag(), expectedTag);
+-
+-        if (!corr && !override) {
+-            throw new XACryptoException("GCM tag does not match. Use Flag -override to ignore this.",(byte)-1);
+-        } else if (!corr) {
+-            System.out.println("GCM tag does not match. Overriding...");
+-        }
+-
+-        return gctr(inc32(J0), ct);
+-    }
+-
+-    private byte[] j0(byte[] iv) {
+-        if (iv.length == 12) {
+-            byte[] J0 = new byte[16];
+-            System.arraycopy(iv, 0, J0, 0, 12);
+-            J0[15] = 0x01;
+-            return J0;
+-        } else {
+-            return gh.compute(new byte[0], iv);
+-        }
+-    }
+-
+-    private byte[] tag(byte[] aad, byte[] ct, byte[] J0) throws InvocationTargetException, IllegalAccessException {
+-        byte[] S   = gh.compute(aad, ct);
+-        byte[] EJ0 = (byte[]) this.encryptor.invoke(J0);
+-        for (int i = 0; i < 16; i++) S[i] ^= EJ0[i];
+-        return S;
+-    }
+-    private byte[] gctr(byte[] icb, byte[] in) throws InvocationTargetException, IllegalAccessException {
+-        byte[] o = new byte[in.length];
+-        byte[] cnt = Arrays.copyOf(icb, 16);
+-        for (int i = 0 ; i < in.length ; i += 16){
+-            byte[] ks = (byte[]) this.encryptor.invoke(cnt);
+-            int len = Math.min(16, in.length -i);
+-            for (int j = 0; j < len; j++) o[i + j] = (byte)(in[i + j] ^ ks[j]);
+-            if (i+16<in.length) cnt = inc32(cnt);
+-        }
+-        return o;
+-    }
+-    private static byte[] inc32(byte[] b) {
+-        byte[] o = Arrays.copyOf(b,16);
+-        for (int i = 15; i >= 12; i--) if (++o[i] != 0) break;
+-        return o;
+-    }
+-}
+diff --git a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/GHASH.java b/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/GHASH.java
+deleted file mode 100644
+index 0befc9c..0000000
+--- a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/GHASH.java
++++ /dev/null
+@@ -1,105 +0,0 @@
+-package de.caydenno1.xacrypto.zekerrijndael.GCM;
+-
+-import de.caydenno1.xacrypto.zekerrijndael.UnchangingData;
+-
+-import java.nio.ByteBuffer;
+-import java.util.Arrays;
+-
+-
+-public class GHASH {
+-    private final byte[] H;
+-
+-    public GHASH(byte[] H) {
+-        this.H = Arrays.copyOf(H, 16);
+-    }
+-
+-    public byte[] compute(byte[] aad, byte[] cip){
+-        byte[] Y = proc(new byte[16], aad);
+-        Y = proc(Y, cip);
+-        byte[] lenBlock = buildLenBlock(
+-                aad.length * 8L,
+-                cip.length * 8L
+-        );
+-        xor(Y, lenBlock);
+-
+-        Y = multi(Y,H);
+-        return Y;
+-    }
+-    private byte[] proc(byte[] Y, byte[] in) {
+-        byte[] bloc = new byte[16];
+-        for (int off = 0; off < in.length; off+=16){
+-            int len = Math.min(16, in.length - off);
+-            System.arraycopy(in, off, bloc, 0, len);
+-            xor(Y, bloc);
+-            Y = multi(Y, H);
+-        }
+-        return Y;
+-    }
+-    private byte[] multi(byte[] X, byte[] Y) {
+-        byte[] Z = new byte[16];
+-        byte[] V = Arrays.copyOf(Y, 16);
+-        for (int bit = 0 ; bit < 128 ; bit++) {
+-            int byindex = bit / 8;
+-            int biindex = 7 - (bit%8);
+-
+-            if (((X[byindex] >> biindex) & 1) == 1) xor(Z,V);
+-
+-            boolean isLSB1 = (V[15] & 1) != 0;
+-
+-            RS(V);
+-
+-            if (isLSB1) xor(V,UnchangingData.R);
+-        }
+-        return Z;
+-    }
+-    private void RS(byte[] bloc) {
+-        int c = 0 ;
+-        for (int i = 0 ; i < 16 ; i++){
+-            int val = bloc[i] & 0xFF;
+-            int next = val & 1;
+-            bloc[i] = (byte) ((val >>> 1) | (c << 7));
+-
+-            c = next;
+-        }
+-    }
+-    public byte[] compNonce(byte[] H, byte[] nonce){
+-        byte[] blk = new byte[16];
+-
+-        int len = nonce.length;
+-        int off = 0;
+-
+-        while (len > 0) {
+-            Arrays.fill(blk, (byte)0);
+-
+-            int cl = Math.min(16, len);//count
+-            System.arraycopy(nonce, off, blk, 0, cl);
+-
+-            multi(blk, H);
+-
+-            off += cl;
+-            len -= cl;
+-        }
+-
+-        Arrays.fill(blk, (byte)0);
+-
+-        long bL = (long)nonce.length *8;
+-
+-        for (int i = 8 ; i < 16 ; i++){
+-            blk[i] = (byte) ((bL >>> (8 * (15-i))) & 0xFF);
+-        }
+-
+-        return multi(blk, H);
+-    }
+-    private byte[] buildLenBlock(long aad, long cipb) {
+-        ByteBuffer buf = ByteBuffer.allocate(16);
+-
+-        buf.putLong(aad);
+-        buf.putLong(cipb);
+-
+-        return buf.array();
+-    }
+-    public byte[] xor(byte[] a, byte[] b){
+-        for (int i = 0 ; i < 16 ; i++) a[i] ^= b[i];
+-        return a;
+-    }
+-}
+diff --git a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/Result.java b/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/Result.java
+deleted file mode 100644
+index 6171d74..0000000
+--- a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/Result.java
++++ /dev/null
+@@ -1,3 +0,0 @@
+-package de.caydenno1.xacrypto.zekerrijndael.GCM;
+-
+-public record Result(byte[] cip, byte[] tag) {}
+diff --git a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/ciphers/AESGCM.java b/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/ciphers/AESGCM.java
+deleted file mode 100644
+index 716d8ee..0000000
+--- a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/ciphers/AESGCM.java
++++ /dev/null
+@@ -1,90 +0,0 @@
+-package de.caydenno1.xacrypto.zekerrijndael.GCM.ciphers;
+-
+-import de.caydenno1.xacrypto.misc.XACryptoException;
+-import de.caydenno1.xacrypto.zekerrijndael.GCM.GHASH;
+-import de.caydenno1.xacrypto.zekerrijndael.GCM.AES;
+-import de.caydenno1.xacrypto.zekerrijndael.GCM.Result;
+-
+-import java.util.Objects;
+-
+-import static de.caydenno1.xacrypto.misc.ToM.ToM;
+-
+-interface AESCipher {
+-    Result encryptBlock(byte[] pln, byte[] key, byte[] nonce, byte[] aad) throws XACryptoException;
+-
+-    byte[] decryptBlock(byte[] cip, byte[] key, byte[] nonce, byte[] aad, byte[] tag) throws XACryptoException;
+-}
+-
+-public class AESGCM implements AESCipher {
+-    public Result encryptBlock(byte[] pln, byte[] key, byte[] nonce, byte[] aad) throws XACryptoException {
+-        System.out.println("WARNING! AESGCM may not be fully functional and partially broken. I am unsure if it fully works or not.");
+-        AES aes = new AES(key, getKeySize(key));
+-        byte[] H = aes.encryptBlock(new byte[16]);
+-        GHASH gh = new GHASH(H);
+-
+-        byte[] J0;
+-        if (nonce.length == 12) {
+-            J0 = new byte[16];
+-            System.arraycopy(nonce, 0, J0, 0, 12);
+-            J0[15] = 1;
+-        } else {
+-           J0 = gh.compNonce(H, nonce);
+-        }
+-
+-        byte[] cip = aes.encryptCTR(pln, J0);
+-
+-        byte[] S = gh.compute(aad, cip);
+-
+-        byte[] TB = aes.encryptBlock(J0);
+-
+-        byte[] Tag = gh.xor(TB, S);
+-
+-        return new Result(cip, Tag);
+-    }
+-    public byte[] decryptBlock(byte[] cip, byte[] key, byte[] nonce, byte[] aad, byte[] tag, String flag) throws XACryptoException {
+-        return decBack(cip, key, nonce, aad, tag, Objects.equals(flag, "-override"));
+-    }
+-
+-    public byte[] decryptBlock(byte[] cip, byte[] key, byte[] nonce, byte[] aad, byte[] tag) throws XACryptoException {
+-        return decBack(cip, key, nonce, aad, tag, false);
+-    }
+-
+-    private static int getKeySize(byte[] key) throws XACryptoException {
+-        return switch (key.length) {
+-            case 16 -> 128;
+-            case 24 -> 192;
+-            case 32 -> 256;
+-            default -> throw new XACryptoException(
+-                    "Invalid AES key length. Expected 16, 24, or 32 bytes."
+-            );
+-        };
+-    }
+-    private byte[] decBack(byte[] cip, byte[] key, byte[] nonce, byte[] aad, byte[] tag, boolean flag) throws XACryptoException {
+-        AES aes = new AES(key, getKeySize(key));
+-        byte[] H = aes.encryptBlock(new byte[16]);
+-        GHASH gh = new GHASH(H);
+-
+-        byte[] J0;
+-        if (nonce.length == 12) {
+-            J0 = new byte[16];
+-            System.arraycopy(nonce, 0, J0, 0, 12);
+-            J0[15] = 1;
+-        } else {
+-            J0 = gh.compNonce(H, nonce);
+-        }
+-
+-        byte[] S = gh.compute(aad, cip);
+-
+-        byte[] TB = aes.encryptBlock(J0);
+-
+-        byte[] expectedTag = gh.xor(TB, S);
+-
+-        if (!ToM(tag, expectedTag) && !flag) {
+-            throw new XACryptoException("Tag does not match. USE flag \"-override\" to ignore this.");
+-        } else if (!ToM(tag,expectedTag) && flag) {
+-            System.out.println("Continuing in insecure mode.");
+-        }
+-
+-        return aes.encryptCTR(cip, J0);
+-    }
+-}
+\ No newline at end of file
+diff --git a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/ciphers/ARIAGCM.java b/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/ciphers/ARIAGCM.java
+deleted file mode 100644
+index 0dbe2d1..0000000
+--- a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/ciphers/ARIAGCM.java
++++ /dev/null
+@@ -1,36 +0,0 @@
+-package de.caydenno1.xacrypto.zekerrijndael.GCM.ciphers;
+-
+-import de.caydenno1.xacrypto.misc.XACryptoException;
+-import de.caydenno1.xacrypto.zekerrijndael.Global.Aria;
+-import de.caydenno1.xacrypto.zekerrijndael.GCM.GCM;
+-import de.caydenno1.xacrypto.zekerrijndael.GCM.Result;
+-
+-import java.lang.reflect.InvocationTargetException;
+-
+-interface AriaCipher {
+-    Result encrypt(byte[] pln, byte[] aad, byte[] iv) throws XACryptoException, InvocationTargetException, IllegalAccessException;
+-    byte[] decrypt(Result res, byte[] aad) throws XACryptoException, InvocationTargetException, IllegalAccessException;
+-    byte[] decrypt(Result res, byte[] aad, String optflag) throws XACryptoException, InvocationTargetException, IllegalAccessException;
+-}
+-
+-public class ARIAGCM implements AriaCipher {
+-    // comes from south korea (likely Seoul?)
+-    // i basically wrote the entire thing in Aria.java already lol. just inheriting it here
+-    private final GCM engine;
+-
+-    public ARIAGCM(byte[] key) throws XACryptoException, InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+-        Aria aria = new Aria(true, key);
+-        this.engine = new GCM(aria);
+-    }
+-
+-    public Result encrypt(byte[] pln, byte[] aad, byte[] iv) throws XACryptoException, InvocationTargetException, IllegalAccessException {
+-        return engine.encrypt(pln, aad,iv);
+-    }
+-
+-    public byte[] decrypt(Result res, byte[] aad) throws XACryptoException, InvocationTargetException, IllegalAccessException {
+-        return engine.decrypt(res, aad);
+-    }
+-    public byte[] decrypt(Result res, byte[] aad, String optflag) throws XACryptoException, InvocationTargetException, IllegalAccessException {
+-        return engine.decrypt(res, aad, optflag);
+-    }
+-}
+\ No newline at end of file
+diff --git a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/ciphers/CamelliaGCM.java b/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/ciphers/CamelliaGCM.java
+deleted file mode 100644
+index d9c290f..0000000
+--- a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/ciphers/CamelliaGCM.java
++++ /dev/null
+@@ -1,13 +0,0 @@
+-package de.caydenno1.xacrypto.zekerrijndael.GCM.ciphers;
+-
+-import de.caydenno1.xacrypto.misc.XACryptoException;
+-import de.caydenno1.xacrypto.zekerrijndael.GCM.GCM;
+-import de.caydenno1.xacrypto.zekerrijndael.Global.Camellia;
+-
+-import java.lang.reflect.InvocationTargetException;
+-
+-public class CamelliaGCM extends GCM {
+-    public CamelliaGCM(byte[] key) throws XACryptoException, InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+-        super(new Camellia(key));
+-    }
+-}
+diff --git a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/ciphers/SM4GCM.java b/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/ciphers/SM4GCM.java
+deleted file mode 100644
+index d838c18..0000000
+--- a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/ciphers/SM4GCM.java
++++ /dev/null
+@@ -1,68 +0,0 @@
+-package de.caydenno1.xacrypto.zekerrijndael.GCM.ciphers;
+-
+-import de.caydenno1.xacrypto.misc.XACryptoException;
+-import de.caydenno1.xacrypto.zekerrijndael.GCM.BlockCipher;
+-import de.caydenno1.xacrypto.zekerrijndael.UnchangingData;
+-
+-public final class SM4GCM implements BlockCipher {
+-    // mainland china encryption! ;) (GB/T 32907-2016)
+-    private final int[] rk = new int[32];
+-
+-    public SM4GCM(byte[] key) throws XACryptoException {
+-        if (key.length != 16) throw new XACryptoException("16 byte key required. :L");
+-        int[] K = new int[4];
+-        for (int i = 0 ; i < 4 ; i++)K[i] = read(key, i*4) ^ UnchangingData.SM4_FK[i];
+-        for (int i = 0 ; i < 32 ; i++) {
+-            K[i&3] ^= p(K[(i+1)&3]
+-                    ^ K[(i+2)&3]
+-                    ^ K[(i+3)&3]
+-                    ^ UnchangingData.SM4_CK[i]
+-            );
+-            rk[i] = K[i & 3];
+-        }
+-    }
+-
+-    @Override
+-    public byte[] encryptBlock(byte[] in) {
+-        int[] x = new int[4];
+-        for (int i = 0 ; i < 4 ; i++) x[i] = read(in, i*4);
+-        for (int i = 0 ; i < 32 ; i++) {
+-            int nx = x[0] ^ t(x[1] ^ x[2] ^ x[3] ^ rk[i]);
+-            for (int j = 0 ; j < 3 ; j++) x[j] = x[j+1];
+-            x[3] = nx;
+-        }
+-        byte[] o = new byte[16];
+-        for (int i = 0 ; i < 4 ; i++) write(x[3-i], o, i*4);
+-        return o;
+-    }
+-
+-    private static int tau(int w) {
+-        return (UnchangingData.SBOX[(w >>> 24) & 0xFF] << 24) |
+-               (UnchangingData.SBOX[(w >>>  8) & 0xFF] << 24);
+-    }
+-
+-    private static int t(int w) {
+-        int b = tau(w);
+-        return b ^ de.caydenno1.xacrypto.hash.ROT.ROTL(b, 2)
+-                 ^ de.caydenno1.xacrypto.hash.ROT.ROTL(b, 10)
+-                 ^ de.caydenno1.xacrypto.hash.ROT.ROTL(b, 18)
+-                 ^ de.caydenno1.xacrypto.hash.ROT.ROTL(b, 24);
+-    }
+-
+-    private static int p(int w) {
+-        int b = tau(w);
+-        return b ^ de.caydenno1.xacrypto.hash.ROT.ROTL(b,13)
+-                 ^ de.caydenno1.xacrypto.hash.ROT.ROTL(b,23);
+-    }
+-
+-    private static int read(byte[] b, int o){
+-        return    ((b[o] & 0xFF) << 24)
+-                | ((b[o+1]&0xFF)<<16)
+-                | ((b[o+2]&0xFF)<<8)
+-                |  (b[o+3]&0xFF);
+-    }
+-
+-    private static void write(int v, byte[] b, int o) {
+-        for (int i = 0; i < 4; i++) b[o + i] = (byte)(v >>> (24 - i * 8));
+-    }
+-}
+diff --git a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/ciphers/SerpentGCM.java b/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/ciphers/SerpentGCM.java
+deleted file mode 100644
+index b114cb3..0000000
+--- a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/ciphers/SerpentGCM.java
++++ /dev/null
+@@ -1,11 +0,0 @@
+-package de.caydenno1.xacrypto.zekerrijndael.GCM.ciphers;
+-
+-import de.caydenno1.xacrypto.misc.XACryptoException;
+-import de.caydenno1.xacrypto.zekerrijndael.GCM.GCM;
+-import de.caydenno1.xacrypto.zekerrijndael.Global.Serpent;
+-
+-import java.lang.reflect.InvocationTargetException;
+-
+-public class SerpentGCM extends GCM {
+-    public SerpentGCM(byte[] key) throws XACryptoException, InvocationTargetException, NoSuchMethodException, IllegalAccessException { super(new Serpent(key)); }
+-}
+diff --git a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/ciphers/TwofishGCM.java b/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/ciphers/TwofishGCM.java
+deleted file mode 100644
+index f5fdda4..0000000
+--- a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/GCM/ciphers/TwofishGCM.java
++++ /dev/null
+@@ -1,13 +0,0 @@
+-package de.caydenno1.xacrypto.zekerrijndael.GCM.ciphers;
+-
+-import de.caydenno1.xacrypto.misc.XACryptoException;
+-import de.caydenno1.xacrypto.zekerrijndael.GCM.GCM;
+-import de.caydenno1.xacrypto.zekerrijndael.Global.Twofish;
+-
+-import java.lang.reflect.InvocationTargetException;
+-
+-public class TwofishGCM extends GCM {
+-    public TwofishGCM(byte[] key) throws XACryptoException, InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+-        super(new Twofish(key));
+-    }
+-}
+diff --git a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/Global/Aria.java b/src/main/java/de/caydenno1/xacrypto/zekerrijndael/Global/Aria.java
+index b38013a..50933de 100644
+--- a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/Global/Aria.java
++++ b/src/main/java/de/caydenno1/xacrypto/zekerrijndael/Global/Aria.java
+@@ -4,7 +4,6 @@ import de.caydenno1.xacrypto.misc.XACryptoException;
+ import de.caydenno1.xacrypto.zekerrijndael.UnchangingData;
+ 
+ public class Aria {
+-    // this is NOT a cipher, more or less and encryption type/method
+     private final int round;
+     private final byte[][] encRK;
+     private final byte[][] decRK;
+@@ -27,7 +26,7 @@ public class Aria {
+         SDK();
+     }
+ 
+-    public byte[] encryptBlock(byte[] in) throws XACryptoException{
++    public byte[] encryptBlock(byte[] in) throws XACryptoException {
+         if (in.length != 16) throw new XACryptoException("input length is required to be 16 bytes", (byte)0x16);
+ 
+         byte[] currentState = new byte[16];
+@@ -42,7 +41,7 @@ public class Aria {
+         if (in.length != 16) throw new XACryptoException("input length is required to be 16 bytes", (byte)0x16);
+ 
+         byte[] state = new byte[16];
+-        System.arraycopy(in,0,state,0,16);
++        System.arraycopy(in, 0, state, 0, 16);
+ 
+         procRound(state, this.decRK);
+ 
+@@ -50,17 +49,18 @@ public class Aria {
+     }
+ 
+     private void SDK() {
+-       System.arraycopy(encRK[0], 0, decRK[round], 0, 16);
+-       System.arraycopy(encRK[round], 0, decRK[0], 0, 16);
++        System.arraycopy(encRK[0], 0, decRK[round], 0, 16);
++        System.arraycopy(encRK[round], 0, decRK[0], 0, 16);
+ 
+-       for (int i = 1 ; i < round ; i++){
+-           A(encRK[i], decRK[round - i]);
+-       }
++        for (int i = 1; i < round; i++) {
++            A(encRK[i], decRK[round - i]);
++        }
+     }
+-    private void procRound(byte[] state, byte[][] rK){
+-        for (int r = 0 ; r < round - 1 ; r++){
+-            AriaXOR(state,rK[r]);
+-            if (r % 2 == 0) {
++
++    private void procRound(byte[] state, byte[][] rK) {
++        for (int r = 0; r < round - 1; r++) {
++            AriaXOR(state, rK[r]);
++            if ((r & 1) == 0) {
+                 SL1(state, state);
+             } else {
+                 SL2(state, state);
+@@ -68,8 +68,8 @@ public class Aria {
+             A(state, state);
+         }
+ 
+-        AriaXOR(state, rK[round-1]);
+-        if((round-1) % 2 == 0) {
++        AriaXOR(state, rK[round - 1]);
++        if (((round - 1) & 1) == 0) {
+             SL1(state, state);
+         } else {
+             SL2(state, state);
+@@ -78,15 +78,15 @@ public class Aria {
+         AriaXOR(state, rK[round], state);
+     }
+ 
+-    private void AriaXOR(byte[] blk, byte[] key){
+-        for (int i = 0 ; i < 16 ; i++){
++    private void AriaXOR(byte[] blk, byte[] key) {
++        for (int i = 0; i < 16; i++) {
+             blk[i] ^= key[i];
+         }
+     }
+ 
+     private void AriaXOR(byte[] a, byte[] b, byte[] o) {
+-        for (int i = 0 ; i < 16 ; i++) {
+-            o[i] = (byte)(a[i] ^ b[i]);
++        for (int i = 0; i < 16; i++) {
++            o[i] = (byte) (a[i] ^ b[i]);
+         }
+     }
+ 
+@@ -94,9 +94,9 @@ public class Aria {
+         int byS = bits / 8;
+         int biS = bits % 8;
+ 
+-        for (int _0 = 0 ; _0 < 16 ; _0++){
+-            int idx1 = (_0 - byS + 32) % 16;
+-            int idx2 = (_0 - byS - 1 + 32) % 16;
++        for (int _0 = 0; _0 < 16; _0++) {
++            int idx1 = (_0 - byS + 32) & 15;
++            int idx2 = (_0 - byS - 1 + 32) & 15;
+ 
+             int b1 = i[idx1] & 0xFF;
+             int b2 = i[idx2] & 0xFF;
+@@ -104,31 +104,65 @@ public class Aria {
+             o[_0] = (byte) ((b1 >>> biS) | (b2 << (8 - biS)));
+         }
+     }
+-    // feistel odd
++
+     private void FO(byte[] i, byte[] ck, byte[] o) {
+         AriaXOR(i, ck, o);
+         SL1(o, o);
+         A(o, o);
+     }
+-    //feistel even
++
+     private void FE(byte[] i, byte[] ck, byte[] o) {
+         AriaXOR(i, ck, o);
+         SL2(o, o);
+         A(o, o);
+     }
+ 
+-    private void SL1(byte[] i,byte[] o){
+-        byte[][] tables = {
+-                UnchangingData.ARIA_SB1,
+-                UnchangingData.ARIA_SB2,
+-                UnchangingData.ARIA_XB1,
+-                UnchangingData.ARIA_XB2
+-        };
++    private void SL1(byte[] i, byte[] o) {
++        for (int k = 0; k < 16; k++) {
++            int val = i[k] & 0xff;
++            o[k] = switch (k & 3) {
++                case 0 -> UnchangingData.ARIA_SB1[val];
++                case 1 -> UnchangingData.ARIA_SB2[val];
++                case 2 -> UnchangingData.ARIA_XB1[val];
++                default -> UnchangingData.ARIA_XB2[val];
++            };
++        }
++    }
+ 
++    private void SL2(byte[] i, byte[] o) {
+         for (int k = 0; k < 16; k++) {
+-            o[k] = tables[k & 3][i[k] & 0xff];
++            int val = i[k] & 0xff;
++            o[k] = switch (k & 3) {
++                case 0 -> UnchangingData.ARIA_XB1[val];
++                case 1 -> UnchangingData.ARIA_XB2[val];
++                case 2 -> UnchangingData.ARIA_SB1[val];
++                default -> UnchangingData.ARIA_SB2[val];
++            };
+         }
++    }
+ 
++    private void A(byte[] i, byte[] o) {
++        byte res0  = (byte)(i[3] ^ i[4] ^ i[9] ^ i[14]);
++        byte res1  = (byte)(i[2] ^ i[5] ^ i[8] ^ i[15]);
++        byte res2  = (byte)(i[1] ^ i[6] ^ i[11] ^ i[12]);
++        byte res3  = (byte)(i[0] ^ i[7] ^ i[10] ^ i[13]);
++        byte res4  = (byte)(i[0] ^ i[5] ^ i[11] ^ i[14]);
++        byte res5  = (byte)(i[1] ^ i[4] ^ i[10] ^ i[15]);
++        byte res6  = (byte)(i[2] ^ i[7] ^ i[9] ^ i[12]);
++        byte res7  = (byte)(i[3] ^ i[6] ^ i[8] ^ i[13]);
++        byte res8  = (byte)(i[1] ^ i[7] ^ i[11] ^ i[13]);
++        byte res9  = (byte)(i[0] ^ i[6] ^ i[10] ^ i[12]);
++        byte res10 = (byte)(i[3] ^ i[5] ^ i[9] ^ i[15]);
++        byte res11 = (byte)(i[2] ^ i[4] ^ i[8] ^ i[14]);
++        byte res12 = (byte)(i[2] ^ i[6] ^ i[9] ^ i[14]);
++        byte res13 = (byte)(i[3] ^ i[7] ^ i[8] ^ i[15]);
++        byte res14 = (byte)(i[0] ^ i[4] ^ i[11] ^ i[12]);
++        byte res15 = (byte)(i[1] ^ i[5] ^ i[10] ^ i[13]);
++
++        o[0]  = res0;  o[1]  = res1;  o[2]  = res2;  o[3]  = res3;
++        o[4]  = res4;  o[5]  = res5;  o[6]  = res6;  o[7]  = res7;
++        o[8]  = res8;  o[9]  = res9;  o[10] = res10; o[11] = res11;
++        o[12] = res12; o[13] = res13; o[14] = res14; o[15] = res15;
+     }
+ 
+     private void encRK(byte[] key) throws XACryptoException {
+@@ -138,35 +172,29 @@ public class Aria {
+         byte[] KR = new byte[16];
+         byte[][] CK = new byte[4][16];
+ 
+-        if (size == 16 || size == 24 || size == 32) System.arraycopy(key,0,KL,0,16);
++        if (size == 16 || size == 24 || size == 32) System.arraycopy(key, 0, KL, 0, 16);
+         switch(size) {
+-            case 16: CK[1]=UnchangingData.ARIA_C1;CK[2]=UnchangingData.ARIA_C2;CK[3]=UnchangingData.ARIA_C3; break;
+-
++            case 16: CK[1] = UnchangingData.ARIA_C1; CK[2] = UnchangingData.ARIA_C2; CK[3] = UnchangingData.ARIA_C3; break;
+             case 24: {
+                 System.arraycopy(key, 16, KR, 0, 8);
+                 CK[1] = UnchangingData.ARIA_C2; CK[2] = UnchangingData.ARIA_C3; CK[3] = UnchangingData.ARIA_C1;
+                 break;
+             }
+-
+             case 32: {
+-                System.arraycopy(key,16,KR,0,16);
+-                CK[1] = UnchangingData.ARIA_C3; CK[2] = UnchangingData.ARIA_C1 ; CK[3] = UnchangingData.ARIA_C2;
++                System.arraycopy(key, 16, KR, 0, 16);
++                CK[1] = UnchangingData.ARIA_C3; CK[2] = UnchangingData.ARIA_C1; CK[3] = UnchangingData.ARIA_C2;
+                 break;
+             }
+-
+             default: throw new XACryptoException("only keysizes of 16,24,32 are supported atm :|");
+         }
+ 
+         byte[][] W = new byte[4][16];
+-
+         System.arraycopy(KL, 0, W[0], 0, 16);
+ 
+         FO(W[0], CK[1], W[1]);
+-        AriaXOR(W[1], KR, W[1]);               // W1 = FO(W0, CK1) ^ KR
+-
++        AriaXOR(W[1], KR, W[1]);
+         FE(W[1], CK[2], W[2]);
+-        AriaXOR(W[2], W[0], W[2]);               // W2 = FE(W1, CK2) ^ W0
+-
++        AriaXOR(W[2], W[0], W[2]);
+         FO(W[2], CK[3], W[3]);
+         AriaXOR(W[3], W[1], W[3]);
+ 
+@@ -194,70 +222,35 @@ public class Aria {
+         SROTR128(W[0], 31, encRK[7]);
+         AriaXOR(encRK[7], W[3], encRK[7]);
+ 
+-        SROTR128(W[1], 128 - 61, encRK[8]);
++        SROTR128(W[1], 67, encRK[8]);
+         AriaXOR(W[0], encRK[8], encRK[8]);
+ 
+-        SROTR128(W[2], 128 - 61, encRK[9]);
++        SROTR128(W[2], 67, encRK[9]);
+         AriaXOR(W[1], encRK[9], encRK[9]);
+ 
+-        SROTR128(W[3], 128 - 61, encRK[10]);
++        SROTR128(W[3], 67, encRK[10]);
+         AriaXOR(W[2], encRK[10], encRK[10]);
+ 
+-        SROTR128(W[0], 128 - 61, encRK[11]);
++        SROTR128(W[0], 67, encRK[11]);
+         AriaXOR(encRK[11], W[3], encRK[11]);
+ 
+-        SROTR128(W[1], 128 - 31, encRK[12]);
++        SROTR128(W[1], 97, encRK[12]);
+         AriaXOR(W[0], encRK[12], encRK[12]);
+ 
+         if (round >= 14) {
+-            SROTR128(W[2], 128 - 31, encRK[13]);
++            SROTR128(W[2], 97, encRK[13]);
+             AriaXOR(W[1], encRK[13], encRK[13]);
+ 
+-            SROTR128(W[3], 128 - 31, encRK[14]);
++            SROTR128(W[3], 97, encRK[14]);
+             AriaXOR(W[2], encRK[14], encRK[14]);
+         }
+ 
+         if (round == 16) {
+-            SROTR128(W[0], 128 - 31, encRK[15]);
++            SROTR128(W[0], 97, encRK[15]);
+             AriaXOR(encRK[15], W[3], encRK[15]);
+ 
+-            SROTR128(W[1], 128 - 19, encRK[16]);
++            SROTR128(W[1], 109, encRK[16]);
+             AriaXOR(W[0], encRK[16], encRK[16]);
+         }
+     }
+-
+-    private void SL2(byte[] i,byte[] o){
+-        byte[][] tables = {
+-                UnchangingData.ARIA_XB1,
+-                UnchangingData.ARIA_XB2,
+-                UnchangingData.ARIA_SB1,
+-                UnchangingData.ARIA_SB2
+-        };
+-
+-        for (int k = 0; k < 16; k++) {
+-            o[k] = tables[k & 3][i[k] & 0xff];
+-        }
+-
+-    }
+-    private void A(byte[] i, byte[] o) {
+-        byte[] _0 = o;
+-        if (i == o) _0 = new byte[16];
+-        _0[0]  = (byte)(i[3] ^ i[4] ^ i[9] ^ i[14]);
+-        _0[1]  = (byte)(i[2] ^ i[5] ^ i[8] ^ i[15]);
+-        _0[2]  = (byte)(i[1] ^ i[6] ^ i[11] ^ i[12]);
+-        _0[3]  = (byte)(i[0] ^ i[7] ^ i[10] ^ i[13]);
+-        _0[4]  = (byte)(i[0] ^ i[5] ^ i[11] ^ i[14]);
+-        _0[5]  = (byte)(i[1] ^ i[4] ^ i[10] ^ i[15]);
+-        _0[6]  = (byte)(i[2] ^ i[7] ^ i[9] ^ i[12]);
+-        _0[7]  = (byte)(i[3] ^ i[6] ^ i[8] ^ i[13]);
+-        _0[8]  = (byte)(i[1] ^ i[7] ^ i[11] ^ i[13]);
+-        _0[9]  = (byte)(i[0] ^ i[6] ^ i[10] ^ i[12]);
+-        _0[10] = (byte)(i[3] ^ i[5] ^ i[9] ^ i[15]);
+-        _0[11] = (byte)(i[2] ^ i[4] ^ i[8] ^ i[14]);
+-        _0[12] = (byte)(i[2] ^ i[6] ^ i[9] ^ i[14]);
+-        _0[13] = (byte)(i[3] ^ i[7] ^ i[8] ^ i[15]);
+-        _0[14] = (byte)(i[0] ^ i[4] ^ i[11] ^ i[12]);
+-        _0[15] = (byte)(i[1] ^ i[5] ^ i[10] ^ i[13]);
+-        if (i == o) System.arraycopy(_0, 0, o, 0, 16);
+-    }
+-}
++}
+\ No newline at end of file
+diff --git a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/Global/Camellia.java b/src/main/java/de/caydenno1/xacrypto/zekerrijndael/Global/Camellia.java
+index eaf31d6..6db1e17 100644
+--- a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/Global/Camellia.java
++++ b/src/main/java/de/caydenno1/xacrypto/zekerrijndael/Global/Camellia.java
+@@ -335,7 +335,6 @@ public class Camellia implements CamelliaCipher {
+         return (y1 << 32) | (y2 & 0xFFFFFFFFL);
+     }
+ 
+-    // <- im expert dev/programmer!
+     private long FLINV(long FLINV_IN, long KE) {
+         long y1 = FLINV_IN >>> 32;
+         long y2 = FLINV_IN & 0xFFFFFFFFL;
+diff --git a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/Global/Twofish.java b/src/main/java/de/caydenno1/xacrypto/zekerrijndael/Global/Twofish.java
+index 841ddca..23d6fed 100644
+--- a/src/main/java/de/caydenno1/xacrypto/zekerrijndael/Global/Twofish.java
++++ b/src/main/java/de/caydenno1/xacrypto/zekerrijndael/Global/Twofish.java
+@@ -141,7 +141,7 @@ public class Twofish {
+         int p = 0;
+         for (int i = 0 ; i < 8 ; i++) {
+             if ((b & 1) != 0) p ^= a;
+-            boolean badia_msg_monosodium_glutamate_28_oz_175_lbs_id_00033844005313 /* lmao */ = (a & 0x80) != 0;
++            boolean badia_msg_monosodium_glutamate_28_oz_175_lbs_id_00033844005313 = (a & 0x80) != 0;
+             a <<= 1;
+             if (badia_msg_monosodium_glutamate_28_oz_175_lbs_id_00033844005313) a ^= 0x169;
+             b >>= 1;

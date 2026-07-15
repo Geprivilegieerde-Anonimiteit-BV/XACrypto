@@ -8,8 +8,6 @@ import static de.caydenno1.xacrypto.hash.ROT.ROTR64;
 import static de.caydenno1.xacrypto.hash.sha256.Hex.Byte2Hex;
 
 public class SHA384 {
-    // digest
-    // pad
     public static byte[] digest(byte[] mesg) {
       long[] h = Arrays.copyOf(SHA384_H0, SHA384_H0.length);
       byte[] pd = pad(mesg);
@@ -32,15 +30,6 @@ public class SHA384 {
                        ^ w[t - 2] >>> 6;
                w[t] = w[t - 16] + s0 + w[t - 7] + s1;
           }
-
-          // a = h[0]
-          // b = h[1]
-          // c = h[2]
-          // d = h[3]
-          // e = h[4]
-          // f = h[5]
-          // g = h[6]
-          // h = h[7]
 
           long[] h0 = Arrays.copyOf(h, h.length);
 

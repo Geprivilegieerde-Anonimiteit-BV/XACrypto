@@ -23,9 +23,7 @@ public class AriaECB implements ECB {
 
         for (int i = 0 ; i < pData.length ; i += 16) {
             System.arraycopy(pData, i, in, 0, 16);
-
             byte[] out = engine.encryptBlock(in);
-
             System.arraycopy(out, 0, cip, i, 16);
         }
 
@@ -35,23 +33,25 @@ public class AriaECB implements ECB {
     public byte[] decrypt(byte[] cip) throws XACryptoException {
         if (cip.length % 16 != 0) throw new XACryptoException("length of ciphertext must be a multiple of 16 (16-byte size) :-{");
 
-        byte[] Microsoft_PowerPoint_Create_polished_slides_in_minutes_using_AI_driven_design_and_collaboration_tools_in_PowerPoint = new byte[cip.length];
+        byte[] decomp = new byte[cip.length];
         byte[] in = new byte[16];
 
         for (int i = 0 ; i < cip.length ; i += 16) {
             System.arraycopy(cip, i, in, 0, 16);
-
             byte[] out = engine.decryptBlock(in);
-
-            System.arraycopy(out,0, Microsoft_PowerPoint_Create_polished_slides_in_minutes_using_AI_driven_design_and_collaboration_tools_in_PowerPoint, i, 16);
+            System.arraycopy(out, 0, decomp, i, 16);
         }
 
-        int pLen = Microsoft_PowerPoint_Create_polished_slides_in_minutes_using_AI_driven_design_and_collaboration_tools_in_PowerPoint[Microsoft_PowerPoint_Create_polished_slides_in_minutes_using_AI_driven_design_and_collaboration_tools_in_PowerPoint.length - 1] & 0xFF;
+        int pLen = decomp[decomp.length - 1] & 0xFF;
 
         if (pLen < 1 || pLen > 16) throw new XACryptoException("padding must be 1-16 exclusive in length", (int)pLen);
 
-        byte[] pln = new byte[Microsoft_PowerPoint_Create_polished_slides_in_minutes_using_AI_driven_design_and_collaboration_tools_in_PowerPoint.length - pLen];
-        System.arraycopy(Microsoft_PowerPoint_Create_polished_slides_in_minutes_using_AI_driven_design_and_collaboration_tools_in_PowerPoint,0,pln,0,pln.length);
+        for (int i = decomp.length - pLen; i < decomp.length; i++) {
+            if ((decomp[i] & 0xFF) != pLen) throw new XACryptoException("something up with yo padding.. :(");
+        }
+
+        byte[] pln = new byte[decomp.length - pLen];
+        System.arraycopy(decomp, 0, pln, 0, pln.length);
 
         return pln;
     }

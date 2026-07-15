@@ -7,7 +7,6 @@ import static de.caydenno1.xacrypto.zekerrijndael.Global.LE32.*;
 
 public class RC6ECB implements ECB {
     private final int[] S;
-    // 20 rounds
 
     public RC6ECB(byte[] key) throws XACryptoException {
         if (key.length <= 0 || key.length > 255) throw new XACryptoException("keys must be 1-255 bytes inclusive :\\");
@@ -16,7 +15,7 @@ public class RC6ECB implements ECB {
         int[] L = new int[c];
         for (int i = 0 ; i < key.length ; i++) L[i / 4] |= (key[i] & 0xFF) << (8 * (i % 4));
 
-        S = new int[44 /* 2x 20 rounds = 40 rounds + 4 = 44. */];
+        S = new int[44];
         S[0] = RC6_P;
         for (int i = 1 ; i < S.length ; i++) S[i] = S[i - 1] + RC6_Q;
 
@@ -93,6 +92,12 @@ public class RC6ECB implements ECB {
         for (int i = 0 ; i < cip.length ; i += 16) decryptBlock(cip, i, de, i);
 
         int pLen = de[de.length - 1] & 0xFF;
+
+        if (pLen < 1 || pLen > 16) throw new XACryptoException("padding must be 1-16 exclusive in length", (int)pLen);
+
+        for (int i = de.length - pLen; i < de.length; i++) {
+            if ((de[i] & 0xFF) != pLen) throw new XACryptoException("something up with yo padding.. :(");
+        }
 
         byte[] pln = new byte[de.length - pLen];
         System.arraycopy(de, 0, pln, 0, pln.length);

@@ -33,7 +33,7 @@ public class Blowfish {
 
         byte[] blk = new byte[8];
         for (int s = 0 ; s < 4 ; s++) {
-            for (int i = 0 ; i < 18 ; i += 2){
+            for (int i = 0 ; i < 256 ; i += 2){
                 encryptBlock(blk, 0, blk, 0);
                 S[s][i] = BYTE2INT(blk, 0);
                 S[s][i + 1] = BYTE2INT(blk, 4);

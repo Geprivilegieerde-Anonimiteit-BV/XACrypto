@@ -2,14 +2,10 @@ package de.caydenno1.xacrypto.zekerrijndael.Global;
 
 import de.caydenno1.xacrypto.misc.XACryptoException;
 import de.caydenno1.xacrypto.zekerrijndael.UnchangingData;
+import de.caydenno1.xacrypto.zekerrijndael.GCM.BlockCipher;
 import de.caydenno1.xacrypto.hash.ROT;
 
-interface CamelliaCipher {
-    byte[] encryptBlock(byte[] in, int inputOffset, byte[] out, int outOffset) throws XACryptoException;
-    byte[] decryptBlock(byte[] in);
-}
-
-public class Camellia implements CamelliaCipher {
+public class Camellia implements BlockCipher {
     private final long[] subkeys;
 
     public Camellia(byte[] key) throws XACryptoException {
@@ -18,11 +14,11 @@ public class Camellia implements CamelliaCipher {
 	    genKeySchedule(key);
     }
 
+    @Override
     public byte[] encryptBlock(byte[] in) {
         return encryptBlock(in, 0, new byte[16], 0);
     }
 
-    @Override
     public byte[] encryptBlock(byte[] in, int inputOffset, byte[] out, int outOffset) {
         long d1 = bytes2Long(in, inputOffset);
         long d2 = bytes2Long(in, inputOffset + 8);
@@ -335,7 +331,6 @@ public class Camellia implements CamelliaCipher {
         return (y1 << 32) | (y2 & 0xFFFFFFFFL);
     }
 
-    // <- im expert dev/programmer!
     private long FLINV(long FLINV_IN, long KE) {
         long y1 = FLINV_IN >>> 32;
         long y2 = FLINV_IN & 0xFFFFFFFFL;

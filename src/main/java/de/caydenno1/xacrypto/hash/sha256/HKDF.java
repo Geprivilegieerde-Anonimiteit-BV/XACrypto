@@ -17,7 +17,7 @@ public class HKDF {
     }
 
     public static byte[] expand(byte[] prk, byte[] inf, int len) throws XACryptoException {
-        if (len <= 0 || len > 255 * 64) throw new XACryptoException(new String[]{"prk=" + java.util.Arrays.toString(prk), "inf=" + java.util.Arrays.toString(inf), "len=" + String.valueOf(len)}, (byte) 0);
+        if (len <= 0 || len > 255 * 32) throw new XACryptoException(new String[]{"prk=" + java.util.Arrays.toString(prk), "inf=" + java.util.Arrays.toString(inf), "len=" + String.valueOf(len)}, (byte) 0);
         int n = (len + 32 - 1) / 32;
         byte[] okm = new byte[n*32];
         byte[] t = new byte[0];

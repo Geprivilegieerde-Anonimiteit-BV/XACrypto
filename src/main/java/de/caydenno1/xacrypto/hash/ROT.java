@@ -10,7 +10,7 @@ public class ROT {
     public static int ROTL(int x, int n){
         return (x << n) | (x >>> (32 - n));
     }
-    public static long ROTL32(long v, int shift) { return ((v & 0xFFFFFFFFL << shift) | (v & 0xFFFFFFFFL >>> (32 - shift))) & 0xFFFFFFFFL; }
+    public static long ROTL32(long v, int shift) { return ((v << shift) | (v >>> (32 - shift))) & 0xFFFFFFFFL; }
     public static long[] ROTL64(long l, long r, int shift) {
         long[] res = new long[2];
         if (shift < 64) {

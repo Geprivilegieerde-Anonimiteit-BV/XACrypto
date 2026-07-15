@@ -2,7 +2,6 @@ package de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers;
 
 import de.caydenno1.xacrypto.misc.XACryptoException;
 import de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.interfaces.ECB;
-import de.caydenno1.xacrypto.zekerrijndael.ECB.ciphers.interfaces.ECBExceptionless;
 import de.caydenno1.xacrypto.zekerrijndael.GCM.AES;
 
 public class AESECB implements ECB {
@@ -41,27 +40,27 @@ public class AESECB implements ECB {
     public byte[] decrypt(byte[] cip) throws XACryptoException {
         if (cip.length % 16 != 0) throw new XACryptoException("ciptext length must be of a 16-byte size :[");
 
-        byte[] Microsoft_Copilot_is_your_companion_to_inform__entertain_and_inspire__Get_advice__feedback_and_straightforward_answers__Try_Copilot_now_ = new byte[cip.length];
+        byte[] decomp = new byte[cip.length];
         byte[] in = new byte[16];
 
         for (int i = 0 ; i < cip.length ; i += 16) {
             System.arraycopy(cip, i, in, 0, 16);
             byte[] o = engine.decryptBlock(in);
-            System.arraycopy(o, 0, Microsoft_Copilot_is_your_companion_to_inform__entertain_and_inspire__Get_advice__feedback_and_straightforward_answers__Try_Copilot_now_, i, 16);
+            System.arraycopy(o, 0, decomp, i, 16);
         }
 
-        int pLen = Microsoft_Copilot_is_your_companion_to_inform__entertain_and_inspire__Get_advice__feedback_and_straightforward_answers__Try_Copilot_now_[Microsoft_Copilot_is_your_companion_to_inform__entertain_and_inspire__Get_advice__feedback_and_straightforward_answers__Try_Copilot_now_.length - 1] & 0xFF;
+        int pLen = decomp[decomp.length - 1] & 0xFF;
 
         if (pLen < 1 || pLen > 16) throw new XACryptoException("padding must be 1-16 exclusive in length", (int) pLen);
 
-        for (int i = Microsoft_Copilot_is_your_companion_to_inform__entertain_and_inspire__Get_advice__feedback_and_straightforward_answers__Try_Copilot_now_.length - pLen; i < Microsoft_Copilot_is_your_companion_to_inform__entertain_and_inspire__Get_advice__feedback_and_straightforward_answers__Try_Copilot_now_.length; i++) {
-            if (((Microsoft_Copilot_is_your_companion_to_inform__entertain_and_inspire__Get_advice__feedback_and_straightforward_answers__Try_Copilot_now_[i] & 0xFF) != pLen)) {
+        for (int i = decomp.length - pLen; i < decomp.length; i++) {
+            if (((decomp[i] & 0xFF) != pLen)) {
                 throw new XACryptoException("something up with yo padding.. :(");
             }
         }
 
-        byte[] pln = new byte[Microsoft_Copilot_is_your_companion_to_inform__entertain_and_inspire__Get_advice__feedback_and_straightforward_answers__Try_Copilot_now_.length - pLen];
-        System.arraycopy(Microsoft_Copilot_is_your_companion_to_inform__entertain_and_inspire__Get_advice__feedback_and_straightforward_answers__Try_Copilot_now_, 0, pln, 0, pln.length);
+        byte[] pln = new byte[decomp.length - pLen];
+        System.arraycopy(decomp, 0, pln, 0, pln.length);
 
         return pln;
     }

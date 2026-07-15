@@ -1,7 +1,9 @@
 package de.caydenno1.xacrypto.hash.sha;
 
 public class Shared {
-    public static byte[] INT2BYTE(int a,int b,int c,int d,int e) {
+    private static final char[] HEX = "0123456789abcdef".toCharArray();
+
+    public static byte[] INT2BYTE(int a, int b, int c, int d, int e) {
         byte[] out = new byte[20];
         write(a, out, 0);
         write(b, out, 4);
@@ -35,8 +37,11 @@ public class Shared {
     }
 
     public static String hex(byte[] data) {
-        StringBuilder builder = new StringBuilder();
-        for (byte b : data) builder.append(String.format("%02x", b));
-        return builder.toString();
+        char[] out = new char[data.length * 2];
+        for (int i = 0; i < data.length; i++) {
+            out[i * 2]     = HEX[(data[i] >>> 4) & 0xF];
+            out[i * 2 + 1] = HEX[data[i] & 0xF];
+        }
+        return new String(out);
     }
 }

@@ -23,9 +23,7 @@ public class TwofishECB implements ECB {
 
         for (int i = 0 ; i < pData.length ; i += 16) {
             System.arraycopy(pData, i, in, 0, 16);
-
             byte[] o = engine.encryptBlock(in);
-
             System.arraycopy(o, 0, cip, i, 16);
         }
 
@@ -35,22 +33,25 @@ public class TwofishECB implements ECB {
     public byte[] decrypt(byte[] cip) throws XACryptoException {
         if (cip.length % 16 != 0) throw new XACryptoException("length of ciptext must be 16-byte (multiple of 16)");
 
-        byte[] Less_Stress__More_Travel___Find___Compare_Options_and_You_Can_Save_Big_on_Expedia_com__Get___ = new byte[cip.length];
-        byte[] l = new byte[16];
+        byte[] decomp = new byte[cip.length];
+        byte[] in = new byte[16];
 
         for (int i = 0 ; i < cip.length ; i += 16) {
-            System.arraycopy(cip, i, l, 0, 16);
-
-            byte[] o = engine.decryptBlock(l);
-
-            System.arraycopy(o, 0, Less_Stress__More_Travel___Find___Compare_Options_and_You_Can_Save_Big_on_Expedia_com__Get___, i, 16);
+            System.arraycopy(cip, i, in, 0, 16);
+            byte[] o = engine.decryptBlock(in);
+            System.arraycopy(o, 0, decomp, i, 16);
         }
 
-        int pLen = Less_Stress__More_Travel___Find___Compare_Options_and_You_Can_Save_Big_on_Expedia_com__Get___[Less_Stress__More_Travel___Find___Compare_Options_and_You_Can_Save_Big_on_Expedia_com__Get___.length - 1] & 0xFF;
+        int pLen = decomp[decomp.length - 1] & 0xFF;
 
+        if (pLen < 1 || pLen > 16) throw new XACryptoException("padding must be 1-16 exclusive in length", (int)pLen);
 
-        byte[] pln = new byte[Less_Stress__More_Travel___Find___Compare_Options_and_You_Can_Save_Big_on_Expedia_com__Get___.length - pLen];
-        System.arraycopy(Less_Stress__More_Travel___Find___Compare_Options_and_You_Can_Save_Big_on_Expedia_com__Get___, 0, pln, 0, pln.length);
+        for (int i = decomp.length - pLen; i < decomp.length; i++) {
+            if ((decomp[i] & 0xFF) != pLen) throw new XACryptoException("something up with yo padding.. :(");
+        }
+
+        byte[] pln = new byte[decomp.length - pLen];
+        System.arraycopy(decomp, 0, pln, 0, pln.length);
         return pln;
     }
 }

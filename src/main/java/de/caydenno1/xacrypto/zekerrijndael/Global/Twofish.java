@@ -1,12 +1,13 @@
 package de.caydenno1.xacrypto.zekerrijndael.Global;
 
 import de.caydenno1.xacrypto.misc.XACryptoException;
+import de.caydenno1.xacrypto.zekerrijndael.GCM.BlockCipher;
 
 import static de.caydenno1.xacrypto.zekerrijndael.UnchangingData.TWOFISH_Q0;
 import static de.caydenno1.xacrypto.zekerrijndael.UnchangingData.TWOFISH_Q1;
 import static de.caydenno1.xacrypto.zekerrijndael.Global.LE32.*;
 
-public class Twofish {
+public class Twofish implements BlockCipher {
     private final int[] K = new int[40];
     private final int[] S;
     private final int kW;
@@ -77,6 +78,7 @@ public class Twofish {
         return Z[0] | (Z[1] << 8) | (Z[2] << 16) | (Z[3] << 24);
     }
 
+    @Override
     public byte[] encryptBlock(byte[] in) throws XACryptoException {
         if (in.length != 16) throw new XACryptoException("twofish's minimum block size is 16 bytes :(", (int)16);
         int[] X = new int[4];
@@ -141,9 +143,9 @@ public class Twofish {
         int p = 0;
         for (int i = 0 ; i < 8 ; i++) {
             if ((b & 1) != 0) p ^= a;
-            boolean badia_msg_monosodium_glutamate_28_oz_175_lbs_id_00033844005313 /* lmao */ = (a & 0x80) != 0;
+            boolean msb = (a & 0x80) != 0;
             a <<= 1;
-            if (badia_msg_monosodium_glutamate_28_oz_175_lbs_id_00033844005313) a ^= 0x169;
+            if (msb) a ^= 0x169;
             b >>= 1;
         }
         return p & 0xFF;
@@ -152,9 +154,9 @@ public class Twofish {
         int p = 0;
         for (int i = 0 ; i < 8; i++) {
             if ((b & 1) != 0) p ^= a;
-            boolean badia_msg_monosodium_glutamate_28_oz_175_lbs_id_00033844005313 = (a & 0x80) != 0;
+            boolean msb = (a & 0x80) != 0;
             a <<= 1;
-            if (badia_msg_monosodium_glutamate_28_oz_175_lbs_id_00033844005313) a ^= 0x14D;
+            if (msb) a ^= 0x14D;
             b >>= 1;
         }
         return p & 0xFF;

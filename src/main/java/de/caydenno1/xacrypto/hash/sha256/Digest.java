@@ -22,13 +22,6 @@ public final class Digest {
         return upd(d, 0, d.length);
     }
 
-    /**
-     * i have never used javadoc before ;-; just using google for javadoc format lol
-     * @param d data
-     * @param o Offset
-     * @param l count
-     * @return {@code this} end data after modification
-     */
     public Digest upd(byte[] d, int o, int l) throws XACryptoException {
         if(o<0||l<0||o+l>d.length) throw new XACryptoException("take a look at your code :)");
         total += l;
@@ -44,12 +37,11 @@ public final class Digest {
             o += 64;
             l -= 64;
         };
-        // save whats remaining i suppose..
         if (l>0) {
             System.arraycopy(d, o, buf, 0, l);
             bufLen = l;
         };
-        return this; // we returned "this" !1
+        return this;
     }
     public Digest upd(String text) throws XACryptoException { return upd(text.getBytes(StandardCharsets.UTF_8) );};
 
@@ -66,6 +58,7 @@ public final class Digest {
         System.arraycopy(buf,0,t,0,bufLen);
         long bit = total * 8L;
         int pad = 64 - (int)((bufLen+1+8) % 64)%64;
+        if (pad == 64) pad = 0;
         if (pad<0) pad += 64;
         int total = bufLen + 1 + pad + 8;
 

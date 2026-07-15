@@ -4,10 +4,10 @@ import de.caydenno1.xacrypto.misc.XACryptoException;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 
 public class Hex {
+    private static final char[] HEX = "0123456789abcdef".toCharArray();
+
     public static byte[] hash(byte[] data) throws XACryptoException {
         return new Digest().upd(data).digest();
     }
@@ -18,13 +18,12 @@ public class Hex {
 
     public static String hashPlain(String text) throws XACryptoException {
         byte[] res = new Digest().upd(text).digest();
-        StringBuilder builder = new StringBuilder();
-
-        for (byte b :res) {
-            builder.append(String.format("%02x", b & 0xFF));
+        char[] out = new char[res.length * 2];
+        for (int i = 0; i < res.length; i++) {
+            out[i * 2]     = HEX[(res[i] >>> 4) & 0xF];
+            out[i * 2 + 1] = HEX[res[i] & 0xF];
         }
-
-        return builder.toString();
+        return new String(out);
     }
 
     public static String hashHex(String text) throws XACryptoException {
@@ -43,18 +42,12 @@ public class Hex {
         return hash(hash(data));
     }
 
-    public static byte[] HashFile(String loc) throws java.io.IOException, XACryptoException {
-        byte[] bytes = Files.readAllBytes(Paths.get(loc));
-        return hash(bytes);
-    }
-
     public static String Byte2Hex(byte[] b) {
-        StringBuilder o = new StringBuilder(b.length * 2);
-        for (byte bi : b) {
-            o.append(String.format("%02x",bi&0xff));
+        char[] o = new char[b.length * 2];
+        for (int i = 0; i < b.length; i++) {
+            o[i * 2]     = HEX[(b[i] >>> 4) & 0xF];
+            o[i * 2 + 1] = HEX[b[i] & 0xF];
         }
-        return o.toString();
+        return new String(o);
     }
-
-
 }
