@@ -1,7 +1,7 @@
 A multi-purpose Cryptography library in Java. Working on it day by day, slowly. Someday this will be complete, today is not that day.
 To be clear, this is **NOT** mean't to be a replacement/alternative to BouncyCastle. Instead, it is meant to include what BouncyCastle does not have. No code was taken from OpenSSL or BouncyCastle for that reason.
 
-We are DMCA-protected: https://www.dmca.com/r/8e2yr97
+We are (soon to be) DMCA-protected: https://www.dmca.com/r/8e2yr97
 
 Yes. We will advertise Microsoft products for free via variable names.
 
